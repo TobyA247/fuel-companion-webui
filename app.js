@@ -33,7 +33,19 @@ const elements = {
   statusBanner: document.getElementById("statusBanner"),
   searchBanner: document.getElementById("searchBanner"),
   resultMessage: document.getElementById("resultMessage"),
-  resultJson: document.getElementById("resultJson")
+  resultJson: document.getElementById("resultJson"),
+  resultCards: document.getElementById("resultCards"),
+  resultDelta: document.getElementById("resultDelta"),
+  motorwayPrice: document.getElementById("motorwayPrice"),
+  motorwayName: document.getElementById("motorwayName"),
+  motorwayMeta: document.getElementById("motorwayMeta"),
+  motorwayAddress: document.getElementById("motorwayAddress"),
+  motorwayNote: document.getElementById("motorwayNote"),
+  offMotorwayPrice: document.getElementById("offMotorwayPrice"),
+  offMotorwayName: document.getElementById("offMotorwayName"),
+  offMotorwayMeta: document.getElementById("offMotorwayMeta"),
+  offMotorwayAddress: document.getElementById("offMotorwayAddress"),
+  offMotorwayNote: document.getElementById("offMotorwayNote")
 };
 
 function loadSavedSettings() {
@@ -156,6 +168,89 @@ function numberFromField(element, label) {
   return value;
 }
 
+function clearOptionCard(prefix, fallbackTitle) {
+  elements[`${prefix}Price`].textContent = "n/a";
+  elements[`${prefix}Name`].textContent = fallbackTitle;
+  elements[`${prefix}Meta`].textContent = "";
+  elements[`${prefix}Address`].textContent = "";
+  elements[`${prefix}Note`].textContent = "";
+}
+
+function formatPrice(option) {
+  if (!option || option.price === null || option.price === undefined) {
+    return "n/a";
+  }
+
+  const amount = Number(option.price).toFixed(3);
+  const currency = option.currency || "";
+  const unit = option.price_unit || "";
+  return `${amount} ${currency}/${unit}`.trim();
+}
+
+function formatOptionMeta(option) {
+  if (!option) {
+    return "";
+  }
+
+  const bits = [];
+  if (option.brand) {
+    bits.push(option.brand);
+  }
+  if (option.distance_km !== null && option.distance_km !== undefined) {
+    bits.push(`${option.distance_km} km away`);
+  }
+  if (option.price_age_hours !== null && option.price_age_hours !== undefined) {
+    bits.push(`price age ${Number(option.price_age_hours).toFixed(1)} h`);
+  }
+  if (option.opening_status) {
+    bits.push(String(option.opening_status).replaceAll("_", " "));
+  }
+  return bits.join(" | ");
+}
+
+function populateOptionCard(prefix, option, emptyMessage) {
+  if (!option) {
+    clearOptionCard(prefix, emptyMessage);
+    return;
+  }
+
+  elements[`${prefix}Price`].textContent = formatPrice(option);
+  elements[`${prefix}Name`].textContent = option.name || emptyMessage;
+  elements[`${prefix}Meta`].textContent = formatOptionMeta(option);
+  elements[`${prefix}Address`].textContent = option.address || "";
+  elements[`${prefix}Note`].textContent = option.opening_note || option.selection_reason || "";
+}
+
+function renderResultDetails(data) {
+  const motorwayOption = data.motorway_option || data.carplay_response?.motorway_option || null;
+  const offMotorwayOption = data.off_motorway_option || data.carplay_response?.off_motorway_option || null;
+
+  elements.resultCards.classList.remove("hidden");
+  populateOptionCard("motorway", motorwayOption, "No motorway option returned.");
+  populateOptionCard("offMotorway", offMotorwayOption, "No off-motorway option returned.");
+
+  const motorwayPrice = motorwayOption?.price;
+  const offMotorwayPrice = offMotorwayOption?.price;
+  if (motorwayPrice !== null && motorwayPrice !== undefined && offMotorwayPrice !== null && offMotorwayPrice !== undefined) {
+    const delta = Number(motorwayPrice) - Number(offMotorwayPrice);
+    if (!Number.isNaN(delta)) {
+      if (delta === 0) {
+        elements.resultDelta.textContent = "Motorway and off-motorway options are priced the same.";
+      } else {
+        const cheaperLabel = delta < 0 ? "Motorway is cheaper" : "Off motorway is cheaper";
+        const deltaValue = Math.abs(delta).toFixed(3);
+        const currency = motorwayOption?.currency || offMotorwayOption?.currency || "EUR";
+        elements.resultDelta.textContent = `${cheaperLabel} by ${deltaValue} ${currency}/L.`;
+      }
+      elements.resultDelta.classList.remove("hidden");
+      return;
+    }
+  }
+
+  elements.resultDelta.textContent = "";
+  elements.resultDelta.classList.add("hidden");
+}
+
 async function sendPayload(payload) {
   const { webhookUrl } = readSharedSettings();
 
@@ -177,10 +272,15 @@ async function sendPayload(payload) {
 
     elements.resultMessage.value = message;
     elements.resultJson.textContent = JSON.stringify(data, null, 2);
+    renderResultDetails(data);
     setStatus(data.ok ? "Request completed successfully." : "Workflow returned an error.", data.ok ? "ok" : "error");
   } catch (error) {
     elements.resultMessage.value = "";
     elements.resultJson.textContent = JSON.stringify({ error: error.message }, null, 2);
+    clearOptionCard("motorway", "No motorway option yet.");
+    clearOptionCard("offMotorway", "No off-motorway option yet.");
+    elements.resultDelta.textContent = "";
+    elements.resultDelta.classList.add("hidden");
     setStatus(error.message || "Request failed.", "error");
   } finally {
     setButtonsDisabled(false);
@@ -353,4 +453,6 @@ elements.quickSendButton.addEventListener("click", handleQuickFuel);
 elements.tripSendButton.addEventListener("click", handleTripFuel);
 
 loadSavedSettings();
+clearOptionCard("motorway", "No motorway option yet.");
+clearOptionCard("offMotorway", "No off-motorway option yet.");
 setStatus("Ready. Add your webhook URL and agent key, then use your location or type coordinates.", "neutral");
