@@ -20,6 +20,7 @@ const elements = {
   quickLng: document.getElementById("quickLng"),
   tripLat: document.getElementById("tripLat"),
   tripLng: document.getElementById("tripLng"),
+  scenarioPreset: document.getElementById("scenarioPreset"),
   destinationLabel: document.getElementById("destinationLabel"),
   destinationPreset: document.getElementById("destinationPreset"),
   destinationSearch: document.getElementById("destinationSearch"),
@@ -46,6 +47,33 @@ const elements = {
   offMotorwayMeta: document.getElementById("offMotorwayMeta"),
   offMotorwayAddress: document.getElementById("offMotorwayAddress"),
   offMotorwayNote: document.getElementById("offMotorwayNote")
+};
+
+const scenarioPresets = {
+  "be-antwerp-rotterdam": {
+    country: "be",
+    originLat: 51.2194,
+    originLng: 4.4025,
+    destinationLat: 51.9244,
+    destinationLng: 4.4777,
+    destinationLabel: "Rotterdam"
+  },
+  "de-kassel-wuerzburg": {
+    country: "de",
+    originLat: 51.26762,
+    originLng: 9.51833,
+    destinationLat: 49.7913,
+    destinationLng: 9.9534,
+    destinationLabel: "Wuerzburg"
+  },
+  "fr-angres-reims": {
+    country: "fr",
+    originLat: 50.418,
+    originLng: 2.72,
+    destinationLat: 49.2583,
+    destinationLng: 4.0317,
+    destinationLabel: "Reims"
+  }
 };
 
 function loadSavedSettings() {
@@ -224,10 +252,23 @@ function populateOptionCard(prefix, option, emptyMessage) {
 function renderResultDetails(data) {
   const motorwayOption = data.motorway_option || data.carplay_response?.motorway_option || null;
   const offMotorwayOption = data.off_motorway_option || data.carplay_response?.off_motorway_option || null;
+  const pricingModel = data.route_context?.pricing_model || null;
 
   elements.resultCards.classList.remove("hidden");
   populateOptionCard("motorway", motorwayOption, "No motorway option returned.");
   populateOptionCard("offMotorway", offMotorwayOption, "No off-motorway option returned.");
+
+  if (pricingModel === "official_daily_maximum") {
+    elements.resultDelta.textContent = "Belgium uses the official daily maximum price, so motorway and off-motorway values can match by design.";
+    elements.resultDelta.classList.remove("hidden");
+    return;
+  }
+
+  if (pricingModel === "official_weekly_average") {
+    elements.resultDelta.textContent = "Netherlands uses an official average fallback, so motorway and off-motorway values can match by design.";
+    elements.resultDelta.classList.remove("hidden");
+    return;
+  }
 
   const motorwayPrice = motorwayOption?.price;
   const offMotorwayPrice = offMotorwayOption?.price;
@@ -356,6 +397,25 @@ function applyPreset() {
   setSearchBanner(`Preset loaded: ${label}.`, true);
 }
 
+function applyScenarioPreset() {
+  const selectedScenario = scenarioPresets[elements.scenarioPreset.value];
+  if (!selectedScenario) {
+    return;
+  }
+
+  elements.country.value = selectedScenario.country;
+  elements.tripLat.value = formatCoordinate(selectedScenario.originLat);
+  elements.tripLng.value = formatCoordinate(selectedScenario.originLng);
+  elements.quickLat.value = formatCoordinate(selectedScenario.originLat);
+  elements.quickLng.value = formatCoordinate(selectedScenario.originLng);
+  elements.destinationLat.value = formatCoordinate(selectedScenario.destinationLat);
+  elements.destinationLng.value = formatCoordinate(selectedScenario.destinationLng);
+  elements.destinationLabel.value = selectedScenario.destinationLabel;
+  elements.destinationSearch.value = selectedScenario.destinationLabel;
+  saveSettings();
+  setSearchBanner(`Scenario loaded: ${selectedScenario.destinationLabel} (${selectedScenario.country.toUpperCase()}).`, true);
+}
+
 function mapCountryCode(countryCode) {
   const code = String(countryCode || "").trim().toLowerCase();
   const mapping = {
@@ -446,6 +506,7 @@ async function searchDestination() {
 });
 
 elements.destinationPreset.addEventListener("change", applyPreset);
+elements.scenarioPreset.addEventListener("change", applyScenarioPreset);
 elements.destinationSearchButton.addEventListener("click", searchDestination);
 elements.quickGeoButton.addEventListener("click", fillLocationForAll);
 elements.tripGeoButton.addEventListener("click", fillLocationForAll);
