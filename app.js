@@ -144,7 +144,12 @@ function readSharedSettings() {
 }
 
 function numberFromField(element, label) {
-  const value = Number(element.value);
+  const rawValue = String(element.value ?? "").trim();
+  if (!rawValue) {
+    throw new Error(`${label} is required.`);
+  }
+
+  const value = Number(rawValue);
   if (Number.isNaN(value)) {
     throw new Error(`${label} must be numeric.`);
   }
