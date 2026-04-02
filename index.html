@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fuel Companion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Fuel Companion</p>
+      <h1>Quick fuel or route fuel, straight into your webhook.</h1>
+      <p class="intro">This page is designed for GitHub Pages and mobile Safari. It can grab your current iPhone location, then send either a fast nearby lookup or a route-aware request into your n8n router workflow.</p>
+    </section>
+
+    <section class="panel settings-panel">
+      <div class="panel-heading">
+        <h2>Settings</h2>
+        <p>Saved locally in your browser on this device.</p>
+      </div>
+
+      <div class="grid two-up">
+        <label>
+          <span>Webhook URL</span>
+          <input id="webhookUrl" type="url" placeholder="https://your-n8n/webhook/fuel-companion-router-v1">
+        </label>
+
+        <label>
+          <span>Agent Key</span>
+          <input id="agentKey" type="password" placeholder="YOUR_AGENT_KEY">
+        </label>
+
+        <label>
+          <span>Country</span>
+          <select id="country">
+            <option value="uk">United Kingdom</option>
+            <option value="fr">France</option>
+            <option value="be">Belgium</option>
+            <option value="nl">Netherlands</option>
+            <option value="de">Germany</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Fuel Type</span>
+          <select id="fuelType">
+            <option value="diesel">Diesel</option>
+            <option value="petrol">Petrol</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Fuel Remaining %</span>
+          <input id="fuelRemainingPercent" type="number" min="0" max="100" step="1" value="50">
+        </label>
+
+        <label>
+          <span>Distance Remaining Miles</span>
+          <input id="distanceRemainingMiles" type="number" min="0" step="1" value="45">
+        </label>
+
+        <label class="checkbox-row">
+          <input id="requireOpenNow" type="checkbox" checked>
+          <span>Require open now</span>
+        </label>
+      </div>
+    </section>
+
+    <section class="mode-grid">
+      <article class="panel">
+        <div class="panel-heading">
+          <h2>Quick Fuel</h2>
+          <p>Current location only. Uses nearby mode.</p>
+        </div>
+
+        <div class="grid two-up compact-grid">
+          <label>
+            <span>Latitude</span>
+            <input id="quickLat" type="number" step="0.000001" placeholder="51.924400">
+          </label>
+
+          <label>
+            <span>Longitude</span>
+            <input id="quickLng" type="number" step="0.000001" placeholder="4.477700">
+          </label>
+        </div>
+
+        <div class="button-row">
+          <button id="quickGeoButton" class="secondary-button" type="button">Use My Location</button>
+          <button id="quickSendButton" class="primary-button" type="button">Send Quick Fuel</button>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-heading">
+          <h2>Trip Fuel</h2>
+          <p>Current location plus a destination for route-aware scoring.</p>
+        </div>
+
+        <div class="grid two-up compact-grid">
+          <label>
+            <span>Origin Latitude</span>
+            <input id="tripLat" type="number" step="0.000001" placeholder="51.924400">
+          </label>
+
+          <label>
+            <span>Origin Longitude</span>
+            <input id="tripLng" type="number" step="0.000001" placeholder="4.477700">
+          </label>
+
+          <label>
+            <span>Destination Name</span>
+            <input id="destinationLabel" type="text" placeholder="Amsterdam">
+          </label>
+
+          <label>
+            <span>Preset</span>
+            <select id="destinationPreset">
+              <option value="">Custom</option>
+              <option value="uk:51.129,1.308:Dover">UK: Dover</option>
+              <option value="fr:51.9244,4.4777:Rotterdam">FR: Rotterdam</option>
+              <option value="be:51.9244,4.4777:Rotterdam">BE: Rotterdam</option>
+              <option value="nl:52.3676,4.9041:Amsterdam">NL: Amsterdam</option>
+              <option value="de:49.7913,9.9534:Wuerzburg">DE: Wuerzburg</option>
+            </select>
+          </label>
+
+          <label class="search-field">
+            <span>Search Destination</span>
+            <div class="inline-action">
+              <input id="destinationSearch" type="text" placeholder="Calais Ferry, Amsterdam, Kassel Ost">
+              <button id="destinationSearchButton" class="secondary-button inline-button" type="button">Find</button>
+            </div>
+          </label>
+
+          <div class="search-hint">
+            Uses OpenStreetMap geocoding only when you tap <strong>Find</strong>. No autocomplete.
+          </div>
+
+          <label>
+            <span>Destination Latitude</span>
+            <input id="destinationLat" type="number" step="0.000001" placeholder="52.367600">
+          </label>
+
+          <label>
+            <span>Destination Longitude</span>
+            <input id="destinationLng" type="number" step="0.000001" placeholder="4.904100">
+          </label>
+        </div>
+
+        <div class="button-row">
+          <button id="tripGeoButton" class="secondary-button" type="button">Use My Location</button>
+          <button id="tripSendButton" class="primary-button" type="button">Send Trip Fuel</button>
+        </div>
+      </article>
+    </section>
+
+    <section class="panel result-panel">
+      <div class="panel-heading">
+        <h2>Result</h2>
+        <p>Shows the returned one-line message plus the raw response when needed.</p>
+      </div>
+
+      <div id="statusBanner" class="status-banner neutral">Ready.</div>
+
+      <div id="searchBanner" class="search-banner hidden"></div>
+
+      <label>
+        <span>One-line message</span>
+        <textarea id="resultMessage" rows="3" readonly placeholder="Your workflow response will appear here."></textarea>
+      </label>
+
+      <details class="raw-output">
+        <summary>Raw JSON response</summary>
+        <pre id="resultJson">{}</pre>
+      </details>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
