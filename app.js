@@ -79,7 +79,7 @@ const scenarioPresets = {
 function loadSavedSettings() {
   elements.webhookUrl.value = localStorage.getItem(storageKeys.webhookUrl) || "https://tobya.app.n8n.cloud/webhook-test/fuel-companion-router-v1";
   elements.agentKey.value = localStorage.getItem(storageKeys.agentKey) || "";
-  elements.country.value = localStorage.getItem(storageKeys.country) || "uk";
+  elements.country.value = localStorage.getItem(storageKeys.country) || "auto";
   elements.fuelType.value = localStorage.getItem(storageKeys.fuelType) || "diesel";
   elements.fuelRemainingPercent.value = localStorage.getItem(storageKeys.fuelRemainingPercent) || "50";
   elements.distanceRemainingMiles.value = localStorage.getItem(storageKeys.distanceRemainingMiles) || "45";
@@ -175,7 +175,7 @@ function readSharedSettings() {
   return {
     webhookUrl,
     agentKey,
-    country: elements.country.value,
+    country: elements.country.value === "auto" ? null : elements.country.value,
     fuel_type: elements.fuelType.value,
     require_open_now: elements.requireOpenNow.checked,
     fuel_remaining_percent: Number(elements.fuelRemainingPercent.value || 0),
@@ -335,13 +335,15 @@ async function handleQuickFuel() {
       agent_key: shared.agentKey,
       lat: numberFromField(elements.quickLat, "Quick latitude"),
       lng: numberFromField(elements.quickLng, "Quick longitude"),
-      country: shared.country,
       fuel_type: shared.fuel_type,
       trip_mode: "nearby_now",
       require_open_now: shared.require_open_now,
       fuel_remaining_percent: shared.fuel_remaining_percent,
       distance_remaining_miles: shared.distance_remaining_miles
     };
+    if (shared.country) {
+      payload.country = shared.country;
+    }
     await sendPayload(payload);
   } catch (error) {
     setStatus(error.message, "error");
@@ -358,13 +360,15 @@ async function handleTripFuel() {
       destination_lat: numberFromField(elements.destinationLat, "Destination latitude"),
       destination_lng: numberFromField(elements.destinationLng, "Destination longitude"),
       destination: elements.destinationLabel.value.trim() || "Destination",
-      country: shared.country,
       fuel_type: shared.fuel_type,
       trip_mode: "prefer_motorway",
       require_open_now: shared.require_open_now,
       fuel_remaining_percent: shared.fuel_remaining_percent,
       distance_remaining_miles: shared.distance_remaining_miles
     };
+    if (shared.country) {
+      payload.country = shared.country;
+    }
     await sendPayload(payload);
   } catch (error) {
     setStatus(error.message, "error");
@@ -388,13 +392,12 @@ function applyPreset() {
     return;
   }
 
-  const [country, lat, lng, label] = value.split(":");
-  elements.country.value = country;
+  const [, lat, lng, label] = value.split(":");
   elements.destinationLat.value = lat;
   elements.destinationLng.value = lng;
   elements.destinationLabel.value = label;
   saveSettings();
-  setSearchBanner(`Preset loaded: ${label}.`, true);
+  setSearchBanner(`Preset loaded: ${label}. Country stays on auto unless you override it.`, true);
 }
 
 function applyScenarioPreset() {
@@ -403,7 +406,7 @@ function applyScenarioPreset() {
     return;
   }
 
-  elements.country.value = selectedScenario.country;
+  elements.country.value = "auto";
   elements.tripLat.value = formatCoordinate(selectedScenario.originLat);
   elements.tripLng.value = formatCoordinate(selectedScenario.originLng);
   elements.quickLat.value = formatCoordinate(selectedScenario.originLat);
@@ -413,7 +416,7 @@ function applyScenarioPreset() {
   elements.destinationLabel.value = selectedScenario.destinationLabel;
   elements.destinationSearch.value = selectedScenario.destinationLabel;
   saveSettings();
-  setSearchBanner(`Scenario loaded: ${selectedScenario.destinationLabel} (${selectedScenario.country.toUpperCase()}).`, true);
+  setSearchBanner(`Scenario loaded: ${selectedScenario.destinationLabel}. Country will be auto-detected from your current location.`, true);
 }
 
 function mapCountryCode(countryCode) {
@@ -473,14 +476,11 @@ async function searchDestination() {
     elements.destinationLabel.value = match.display_name || query;
 
     const resolvedCountry = mapCountryCode(match.address?.country_code);
-    if (resolvedCountry) {
-      elements.country.value = resolvedCountry;
-      saveSettings();
-    }
 
     const summary = [
       match.display_name || query,
-      resolvedCountry ? `country set to ${resolvedCountry.toUpperCase()}` : null
+      resolvedCountry ? `destination country ${resolvedCountry.toUpperCase()}` : null,
+      elements.country.value === "auto" ? "routing country still auto-detected from origin" : `country override ${elements.country.value.toUpperCase()}`
     ].filter(Boolean).join(" | ");
 
     setSearchBanner(summary, true);
