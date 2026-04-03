@@ -5,7 +5,8 @@ const storageKeys = {
   fuelType: "fuel-companion-fuel-type",
   fuelRemainingPercent: "fuel-companion-fuel-remaining-percent",
   distanceRemainingMiles: "fuel-companion-distance-remaining-miles",
-  requireOpenNow: "fuel-companion-require-open-now"
+  requireOpenNow: "fuel-companion-require-open-now",
+  deCooldownUntil: "fuel-companion-de-cooldown-until"
 };
 
 const elements = {
@@ -31,6 +32,7 @@ const elements = {
   tripGeoButton: document.getElementById("tripGeoButton"),
   quickSendButton: document.getElementById("quickSendButton"),
   tripSendButton: document.getElementById("tripSendButton"),
+  rateLimitBanner: document.getElementById("rateLimitBanner"),
   statusBanner: document.getElementById("statusBanner"),
   searchBanner: document.getElementById("searchBanner"),
   resultMessage: document.getElementById("resultMessage"),
@@ -48,6 +50,10 @@ const elements = {
   offMotorwayAddress: document.getElementById("offMotorwayAddress"),
   offMotorwayNote: document.getElementById("offMotorwayNote")
 };
+
+const deCooldownMs = 5 * 60 * 1000;
+let inFlightRequest = false;
+let deCooldownTimer = null;
 
 const scenarioPresets = {
   "be-antwerp-rotterdam": {
@@ -106,12 +112,58 @@ function setButtonsDisabled(disabled) {
   [
     elements.quickGeoButton,
     elements.tripGeoButton,
-    elements.quickSendButton,
-    elements.tripSendButton,
     elements.destinationSearchButton
   ].forEach((button) => {
     button.disabled = disabled;
   });
+}
+
+function getDeCooldownUntil() {
+  const rawValue = localStorage.getItem(storageKeys.deCooldownUntil);
+  const value = Number(rawValue || 0);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function setDeCooldownUntil(timestamp) {
+  if (!timestamp) {
+    localStorage.removeItem(storageKeys.deCooldownUntil);
+    return;
+  }
+  localStorage.setItem(storageKeys.deCooldownUntil, String(timestamp));
+}
+
+function formatRemainingCooldown(ms) {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function renderDeCooldown() {
+  const cooldownUntil = getDeCooldownUntil();
+  const remaining = cooldownUntil - Date.now();
+  const active = remaining > 0;
+
+  elements.rateLimitBanner.classList.toggle("hidden", !active);
+  elements.quickSendButton.disabled = inFlightRequest || active;
+  elements.tripSendButton.disabled = inFlightRequest || active;
+
+  if (!active) {
+    elements.rateLimitBanner.textContent = "";
+    if (deCooldownTimer) {
+      window.clearTimeout(deCooldownTimer);
+      deCooldownTimer = null;
+    }
+    return;
+  }
+
+  elements.rateLimitBanner.textContent = `Germany live pricing is rate-limited to one request every 5 minutes. Next DE lookup available in ${formatRemainingCooldown(remaining)}.`;
+  deCooldownTimer = window.setTimeout(renderDeCooldown, 1000);
+}
+
+function startDeCooldown() {
+  setDeCooldownUntil(Date.now() + deCooldownMs);
+  renderDeCooldown();
 }
 
 function setSearchBanner(message = "", visible = false) {
@@ -301,7 +353,16 @@ function renderResultDetails(data) {
 
 async function sendPayload(payload) {
   const { webhookUrl } = readSharedSettings();
+  const cooldownUntil = getDeCooldownUntil();
 
+  if (cooldownUntil > Date.now()) {
+    renderDeCooldown();
+    setStatus("Germany live lookup is cooling down. Please wait before sending another request.", "error");
+    return;
+  }
+
+  inFlightRequest = true;
+  renderDeCooldown();
   setButtonsDisabled(true);
   setStatus("Sending request to webhook...", "neutral");
 
@@ -323,6 +384,9 @@ async function sendPayload(payload) {
     elements.resultMessage.value = message;
     elements.resultJson.textContent = JSON.stringify(data, null, 2);
     renderResultDetails(data);
+    if (data.ok && String(data.request?.country || "").toLowerCase() === "de") {
+      startDeCooldown();
+    }
     setStatus(data.ok ? "Request completed successfully." : "Workflow returned an error.", data.ok ? "ok" : "error");
   } catch (error) {
     elements.resultMessage.value = "";
@@ -333,6 +397,8 @@ async function sendPayload(payload) {
     elements.resultDelta.classList.add("hidden");
     setStatus(error.message || "Request failed.", "error");
   } finally {
+    inFlightRequest = false;
+    renderDeCooldown();
     setButtonsDisabled(false);
   }
 }
@@ -525,4 +591,5 @@ elements.tripSendButton.addEventListener("click", handleTripFuel);
 loadSavedSettings();
 clearOptionCard("motorway", "No motorway option yet.");
 clearOptionCard("offMotorway", "No off-motorway option yet.");
+renderDeCooldown();
 setStatus("Ready. Add your webhook URL and agent key, then use your location or type coordinates.", "neutral");

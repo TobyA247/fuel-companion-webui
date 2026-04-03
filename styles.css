@@ -306,6 +306,20 @@ button:active {
   border-color: rgba(168, 54, 42, 0.18);
 }
 
+.rate-limit-banner {
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  background: rgba(199, 93, 44, 0.12);
+  border: 1px solid rgba(199, 93, 44, 0.22);
+  color: #8c3f1b;
+  font-size: 0.95rem;
+}
+
+.rate-limit-banner.hidden {
+  display: none;
+}
+
 .search-banner {
   border-radius: 14px;
   padding: 12px 14px;
