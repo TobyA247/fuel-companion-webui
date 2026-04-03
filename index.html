@@ -13,17 +13,45 @@
   <main class="shell">
     <section class="hero">
       <p class="eyebrow">Fuel Companion</p>
-      <h1>Quick fuel or route fuel, straight into your webhook.</h1>
-      <p class="intro">This page is designed for GitHub Pages and mobile Safari. It can grab your current iPhone location, then send either a fast nearby lookup or a route-aware request into your n8n router workflow.</p>
+      <h1>Quick Fuel first, route fuel when you need it.</h1>
+      <p class="intro">This page is designed for GitHub Pages and mobile Safari. Quick Fuel stays front and centre for fast nearby lookups, while route planning and setup stay tucked away until you need them.</p>
     </section>
 
-    <section class="panel settings-panel">
-      <div class="panel-heading">
-        <h2>Settings</h2>
-        <p>Saved locally in your browser on this device.</p>
-      </div>
+    <section class="quick-fuel-main">
+      <article class="panel quick-panel">
+        <div class="panel-heading">
+          <h2>Quick Fuel</h2>
+          <p>Current location only. Uses nearby mode.</p>
+        </div>
 
-      <div class="grid two-up">
+        <div class="grid two-up compact-grid">
+          <label>
+            <span>Latitude</span>
+            <input id="quickLat" type="number" step="0.000001" placeholder="51.924400">
+          </label>
+
+          <label>
+            <span>Longitude</span>
+            <input id="quickLng" type="number" step="0.000001" placeholder="4.477700">
+          </label>
+        </div>
+
+        <div class="button-row">
+          <button id="quickGeoButton" class="secondary-button" type="button">Use My Location</button>
+          <button id="quickSendButton" class="primary-button" type="button">Send Quick Fuel</button>
+        </div>
+      </article>
+    </section>
+
+    <details class="panel collapsible-panel settings-panel">
+      <summary class="collapsible-summary">
+        <div>
+          <h2>Settings</h2>
+          <p>Saved locally in your browser on this device.</p>
+        </div>
+      </summary>
+
+      <div class="collapsible-body grid two-up">
         <label>
           <span>Webhook URL</span>
           <input id="webhookUrl" type="url" placeholder="https://your-n8n/webhook/fuel-companion-router-v1">
@@ -69,106 +97,82 @@
           <span>Require open now</span>
         </label>
       </div>
-    </section>
+    </details>
 
-    <section class="mode-grid">
-      <article class="panel">
-        <div class="panel-heading">
-          <h2>Quick Fuel</h2>
-          <p>Current location only. Uses nearby mode.</p>
-        </div>
-
-        <div class="grid two-up compact-grid">
-          <label>
-            <span>Latitude</span>
-            <input id="quickLat" type="number" step="0.000001" placeholder="51.924400">
-          </label>
-
-          <label>
-            <span>Longitude</span>
-            <input id="quickLng" type="number" step="0.000001" placeholder="4.477700">
-          </label>
-        </div>
-
-        <div class="button-row">
-          <button id="quickGeoButton" class="secondary-button" type="button">Use My Location</button>
-          <button id="quickSendButton" class="primary-button" type="button">Send Quick Fuel</button>
-        </div>
-      </article>
-
-      <article class="panel">
-        <div class="panel-heading">
+    <details class="panel collapsible-panel trip-panel">
+      <summary class="collapsible-summary">
+        <div>
           <h2>Trip Fuel</h2>
           <p>Current location plus a destination for route-aware scoring.</p>
         </div>
+      </summary>
 
-        <div class="grid two-up compact-grid">
-          <label class="search-field">
-            <span>Scenario</span>
-            <select id="scenarioPreset">
-              <option value="">Custom</option>
-              <option value="be-antwerp-rotterdam">Belgium: Antwerp to Rotterdam</option>
-              <option value="de-kassel-wuerzburg">Germany: Kassel Ost to Wuerzburg</option>
-              <option value="fr-angres-reims">France: Aire d'Angres to Reims</option>
-            </select>
-          </label>
+      <div class="collapsible-body grid two-up compact-grid">
+        <label class="search-field">
+          <span>Scenario</span>
+          <select id="scenarioPreset">
+            <option value="">Custom</option>
+            <option value="be-antwerp-rotterdam">Belgium: Antwerp to Rotterdam</option>
+            <option value="de-kassel-wuerzburg">Germany: Kassel Ost to Wuerzburg</option>
+            <option value="fr-angres-reims">France: Aire d'Angres to Reims</option>
+          </select>
+        </label>
 
-          <label>
-            <span>Origin Latitude</span>
-            <input id="tripLat" type="number" step="0.000001" placeholder="51.924400">
-          </label>
+        <label>
+          <span>Origin Latitude</span>
+          <input id="tripLat" type="number" step="0.000001" placeholder="51.924400">
+        </label>
 
-          <label>
-            <span>Origin Longitude</span>
-            <input id="tripLng" type="number" step="0.000001" placeholder="4.477700">
-          </label>
+        <label>
+          <span>Origin Longitude</span>
+          <input id="tripLng" type="number" step="0.000001" placeholder="4.477700">
+        </label>
 
-          <label>
-            <span>Destination Name</span>
-            <input id="destinationLabel" type="text" placeholder="Amsterdam">
-          </label>
+        <label>
+          <span>Destination Name</span>
+          <input id="destinationLabel" type="text" placeholder="Amsterdam">
+        </label>
 
-          <label>
-            <span>Preset</span>
-            <select id="destinationPreset">
-              <option value="">Custom</option>
-              <option value="uk:51.129,1.308:Dover">UK: Dover</option>
-              <option value="fr:51.9244,4.4777:Rotterdam">FR: Rotterdam</option>
-              <option value="be:51.9244,4.4777:Rotterdam">BE: Rotterdam</option>
-              <option value="nl:52.3676,4.9041:Amsterdam">NL: Amsterdam</option>
-              <option value="de:49.7913,9.9534:Wuerzburg">DE: Wuerzburg</option>
-            </select>
-          </label>
+        <label>
+          <span>Preset</span>
+          <select id="destinationPreset">
+            <option value="">Custom</option>
+            <option value="uk:51.129,1.308:Dover">UK: Dover</option>
+            <option value="fr:51.9244,4.4777:Rotterdam">FR: Rotterdam</option>
+            <option value="be:51.9244,4.4777:Rotterdam">BE: Rotterdam</option>
+            <option value="nl:52.3676,4.9041:Amsterdam">NL: Amsterdam</option>
+            <option value="de:49.7913,9.9534:Wuerzburg">DE: Wuerzburg</option>
+          </select>
+        </label>
 
-          <label class="search-field">
-            <span>Search Destination</span>
-            <div class="inline-action">
-              <input id="destinationSearch" type="text" placeholder="Calais Ferry, Amsterdam, Kassel Ost">
-              <button id="destinationSearchButton" class="secondary-button inline-button" type="button">Find</button>
-            </div>
-          </label>
-
-          <div class="search-hint">
-            Uses OpenStreetMap geocoding only when you tap <strong>Find</strong>. No autocomplete.
+        <label class="search-field">
+          <span>Search Destination</span>
+          <div class="inline-action">
+            <input id="destinationSearch" type="text" placeholder="Calais Ferry, Amsterdam, Kassel Ost">
+            <button id="destinationSearchButton" class="secondary-button inline-button" type="button">Find</button>
           </div>
+        </label>
 
-          <label>
-            <span>Destination Latitude</span>
-            <input id="destinationLat" type="number" step="0.000001" placeholder="52.367600">
-          </label>
-
-          <label>
-            <span>Destination Longitude</span>
-            <input id="destinationLng" type="number" step="0.000001" placeholder="4.904100">
-          </label>
+        <div class="search-hint">
+          Uses OpenStreetMap geocoding only when you tap <strong>Find</strong>. No autocomplete.
         </div>
 
-        <div class="button-row">
-          <button id="tripGeoButton" class="secondary-button" type="button">Use My Location</button>
-          <button id="tripSendButton" class="primary-button" type="button">Send Trip Fuel</button>
-        </div>
-      </article>
-    </section>
+        <label>
+          <span>Destination Latitude</span>
+          <input id="destinationLat" type="number" step="0.000001" placeholder="52.367600">
+        </label>
+
+        <label>
+          <span>Destination Longitude</span>
+          <input id="destinationLng" type="number" step="0.000001" placeholder="4.904100">
+        </label>
+      </div>
+
+      <div class="button-row collapsible-actions">
+        <button id="tripGeoButton" class="secondary-button" type="button">Use My Location</button>
+        <button id="tripSendButton" class="primary-button" type="button">Send Trip Fuel</button>
+      </div>
+    </details>
 
     <section class="panel result-panel">
       <div class="panel-heading">

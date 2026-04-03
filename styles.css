@@ -92,11 +92,17 @@ button {
   margin-bottom: 22px;
 }
 
-.mode-grid {
-  display: grid;
-  gap: 22px;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+.quick-fuel-main {
   margin-bottom: 22px;
+}
+
+.quick-panel {
+  padding: 26px;
+}
+
+.collapsible-panel {
+  margin-bottom: 22px;
+  padding: 0;
 }
 
 .panel-heading {
@@ -195,6 +201,56 @@ textarea:focus {
   color: var(--muted);
   font-size: 0.9rem;
   margin-top: -4px;
+}
+
+.collapsible-summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.collapsible-summary::-webkit-details-marker {
+  display: none;
+}
+
+.collapsible-summary::after {
+  content: "+";
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.8rem;
+  line-height: 1;
+  color: var(--accent-strong);
+  flex-shrink: 0;
+}
+
+.collapsible-panel[open] .collapsible-summary::after {
+  content: "−";
+}
+
+.collapsible-summary h2 {
+  font-size: 1.35rem;
+  margin-bottom: 4px;
+}
+
+.collapsible-summary p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.collapsible-body,
+.collapsible-actions {
+  padding-left: 22px;
+  padding-right: 22px;
+}
+
+.collapsible-body {
+  padding-bottom: 18px;
+}
+
+.collapsible-actions {
+  padding-bottom: 22px;
 }
 
 button {
@@ -363,6 +419,21 @@ pre {
   .panel {
     padding: 18px;
     border-radius: 18px;
+  }
+
+  .quick-panel {
+    padding: 20px;
+  }
+
+  .collapsible-panel {
+    padding: 0;
+  }
+
+  .collapsible-summary,
+  .collapsible-body,
+  .collapsible-actions {
+    padding-left: 18px;
+    padding-right: 18px;
   }
 
   .checkbox-row {

@@ -77,7 +77,8 @@ const scenarioPresets = {
 };
 
 function loadSavedSettings() {
-  elements.webhookUrl.value = localStorage.getItem(storageKeys.webhookUrl) || "https://tobya.app.n8n.cloud/webhook-test/fuel-companion-router-v1";
+  const savedWebhookUrl = localStorage.getItem(storageKeys.webhookUrl) || "https://tobya.app.n8n.cloud/webhook/fuel-companion-router-v1";
+  elements.webhookUrl.value = savedWebhookUrl.replace("/webhook-test/", "/webhook/");
   elements.agentKey.value = localStorage.getItem(storageKeys.agentKey) || "";
   elements.country.value = localStorage.getItem(storageKeys.country) || "auto";
   elements.fuelType.value = localStorage.getItem(storageKeys.fuelType) || "diesel";
