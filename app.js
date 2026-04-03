@@ -237,6 +237,12 @@ function formatOptionMeta(option) {
   return bits.join(" | ");
 }
 
+function formatOneLineMessage(message) {
+  return String(message || "")
+    .replaceAll("Off motorway:", "Off M/way:")
+    .replaceAll("Off motorway max:", "Off M/way max:");
+}
+
 function populateOptionCard(prefix, option, emptyMessage) {
   if (!option) {
     clearOptionCard(prefix, emptyMessage);
@@ -310,7 +316,9 @@ async function sendPayload(payload) {
     });
 
     const data = await response.json();
-    const message = data.message || data.carplay_response?.short_message || data.carplay_response?.speak_message || "No message returned.";
+    const message = formatOneLineMessage(
+      data.message || data.carplay_response?.short_message || data.carplay_response?.speak_message || "No message returned."
+    );
 
     elements.resultMessage.value = message;
     elements.resultJson.textContent = JSON.stringify(data, null, 2);
