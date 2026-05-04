@@ -32,6 +32,7 @@ const elements = {
   tripGeoButton: document.getElementById("tripGeoButton"),
   quickSendButton: document.getElementById("quickSendButton"),
   tripSendButton: document.getElementById("tripSendButton"),
+  saveSettingsButton: document.getElementById("saveSettingsButton"),
   rateLimitBanner: document.getElementById("rateLimitBanner"),
   statusBanner: document.getElementById("statusBanner"),
   searchBanner: document.getElementById("searchBanner"),
@@ -83,7 +84,7 @@ const scenarioPresets = {
 };
 
 function loadSavedSettings() {
-  const savedWebhookUrl = localStorage.getItem(storageKeys.webhookUrl) || "https://tobya.app.n8n.cloud/webhook/fuel-companion-router-v1";
+  const savedWebhookUrl = localStorage.getItem(storageKeys.webhookUrl) || "";
   elements.webhookUrl.value = savedWebhookUrl.replace("/webhook-test/", "/webhook/");
   elements.agentKey.value = localStorage.getItem(storageKeys.agentKey) || "";
   elements.country.value = localStorage.getItem(storageKeys.country) || "auto";
@@ -101,6 +102,11 @@ function saveSettings() {
   localStorage.setItem(storageKeys.fuelRemainingPercent, elements.fuelRemainingPercent.value);
   localStorage.setItem(storageKeys.distanceRemainingMiles, elements.distanceRemainingMiles.value);
   localStorage.setItem(storageKeys.requireOpenNow, String(elements.requireOpenNow.checked));
+}
+
+function handleSaveSettings() {
+  saveSettings();
+  setStatus("Settings saved on this device.", "ok");
 }
 
 function setStatus(message, tone = "neutral") {
@@ -587,6 +593,9 @@ elements.quickGeoButton.addEventListener("click", fillLocationForAll);
 elements.tripGeoButton.addEventListener("click", fillLocationForAll);
 elements.quickSendButton.addEventListener("click", handleQuickFuel);
 elements.tripSendButton.addEventListener("click", handleTripFuel);
+if (elements.saveSettingsButton) {
+  elements.saveSettingsButton.addEventListener("click", handleSaveSettings);
+}
 
 loadSavedSettings();
 clearOptionCard("motorway", "No motorway option yet.");
