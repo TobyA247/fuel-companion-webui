@@ -203,6 +203,10 @@ textarea:focus {
   margin-top: -4px;
 }
 
+.settings-actions {
+  grid-column: 1 / -1;
+}
+
 .collapsible-summary {
   list-style: none;
   cursor: pointer;
