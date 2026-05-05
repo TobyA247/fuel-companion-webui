@@ -1,0 +1,22 @@
+{
+  "name": "Fuel Companion Quick Ping",
+  "version": 1,
+  "description": "Reference configuration for an iPhone Shortcut or web-app button that sends current location to Fuel Companion and shows the returned message.",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "Accept": "application/json"
+  },
+  "body": {
+    "agent_key": "fuel-companion-local-dev-key",
+    "lat": "{current_location.latitude}",
+    "lng": "{current_location.longitude}",
+    "fuel_type": "diesel",
+    "trip_mode": "nearby_now",
+    "require_open_now": true,
+    "fuel_remaining_percent": 50,
+    "distance_remaining_miles": 45
+  },
+  "response_message_path": "message",
+  "notification_title": "Fuel Companion"
+}
