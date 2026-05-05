@@ -45,6 +45,17 @@
       </article>
     </section>
 
+    <section class="panel ping-panel">
+      <div class="panel-heading">
+        <h2>iPhone Ping</h2>
+        <p>Runs Quick Fuel with your current location and posts the returned one-line message as a device notification when the browser allows it.</p>
+      </div>
+
+      <div class="button-row">
+        <button id="pingFuelButton" class="primary-button" type="button">Test Fuel Ping</button>
+      </div>
+    </section>
+
     <details class="panel collapsible-panel settings-panel">
       <summary class="collapsible-summary">
         <div>
@@ -100,7 +111,7 @@
         </label>
 
         <div class="settings-actions">
-          <button id="saveSettingsButton" class="primary-button" type="button" onclick="localStorage.setItem('fuel-companion-webhook-url', document.getElementById('webhookUrl').value.trim()); localStorage.setItem('fuel-companion-agent-key', document.getElementById('agentKey').value.trim()); localStorage.setItem('fuel-companion-country', document.getElementById('country').value); localStorage.setItem('fuel-companion-fuel-type', document.getElementById('fuelType').value); localStorage.setItem('fuel-companion-fuel-remaining-percent', document.getElementById('fuelRemainingPercent').value); localStorage.setItem('fuel-companion-distance-remaining-miles', document.getElementById('distanceRemainingMiles').value); localStorage.setItem('fuel-companion-require-open-now', String(document.getElementById('requireOpenNow').checked)); document.getElementById('statusBanner').textContent = 'Settings saved on this device.'; document.getElementById('statusBanner').className = 'status-banner ok';">Save Settings</button>
+          <button id="saveSettingsButton" class="primary-button" type="button">Save Settings</button>
         </div>
       </div>
     </details>
