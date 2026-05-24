@@ -13,46 +13,75 @@
   <main class="shell">
     <section class="hero">
       <p class="eyebrow">Fuel Companion</p>
-      <h1>Quick Fuel first, route fuel when you need it.</h1>
-      <p class="intro">This page is designed for GitHub Pages and mobile Safari. Quick Fuel stays front and centre for fast nearby lookups, while route planning and setup stay tucked away until you need them.</p>
+      <h1>Motorway fuel, without the faff.</h1>
+      <p class="intro">Save the destination once, then use the ping button while travelling. The request sends movement direction plus destination context so the workflow can look ahead instead of just nearby.</p>
     </section>
 
     <section class="quick-fuel-main">
       <article class="panel quick-panel">
         <div class="panel-heading">
-          <h2>Quick Fuel</h2>
-          <p>Current location only. Uses nearby mode.</p>
+          <h2>Active Destination</h2>
+          <p>Find a place once and save its coordinates for the next motorway fuel ping.</p>
         </div>
 
         <div id="rateLimitBanner" class="rate-limit-banner hidden"></div>
 
         <div class="grid two-up compact-grid">
-          <label>
-            <span>Latitude</span>
-            <input id="quickLat" type="number" step="0.000001" placeholder="51.924400">
+          <label class="search-field">
+            <span>Search Destination</span>
+            <div class="inline-action">
+              <input id="destinationSearch" type="text" placeholder="Dover, London, Bristol, Heathrow">
+              <button id="destinationSearchButton" class="secondary-button inline-button" type="button">Find</button>
+            </div>
           </label>
 
           <label>
-            <span>Longitude</span>
-            <input id="quickLng" type="number" step="0.000001" placeholder="4.477700">
+            <span>Preset</span>
+            <select id="destinationPreset">
+              <option value="">Custom</option>
+              <option value="uk:51.129,1.308:Dover">UK: Dover</option>
+              <option value="uk:51.5074,-0.1278:London">UK: London</option>
+              <option value="uk:51.4545,-2.5879:Bristol">UK: Bristol</option>
+              <option value="uk:51.4700,-0.4543:Heathrow">UK: Heathrow</option>
+              <option value="fr:51.9244,4.4777:Rotterdam">FR: Rotterdam</option>
+              <option value="be:51.9244,4.4777:Rotterdam">BE: Rotterdam</option>
+              <option value="nl:52.3676,4.9041:Amsterdam">NL: Amsterdam</option>
+              <option value="de:49.7913,9.9534:Wuerzburg">DE: Wuerzburg</option>
+            </select>
+          </label>
+
+          <label class="search-field">
+            <span>Resolved Destination</span>
+            <input id="destinationLabel" type="text" value="Dover" placeholder="Dover, Kent, England">
+          </label>
+
+          <label>
+            <span>Destination Latitude</span>
+            <input id="destinationLat" type="number" step="0.000001" value="51.129000" placeholder="51.129000">
+          </label>
+
+          <label>
+            <span>Destination Longitude</span>
+            <input id="destinationLng" type="number" step="0.000001" value="1.308000" placeholder="1.308000">
           </label>
         </div>
 
+        <div id="activeDestinationSummary" class="search-banner hidden"></div>
+
         <div class="button-row">
-          <button id="quickGeoButton" class="secondary-button" type="button">Use My Location</button>
-          <button id="quickSendButton" class="primary-button" type="button">Send Quick Fuel</button>
+          <button id="saveDestinationButton" class="secondary-button" type="button">Save Destination</button>
         </div>
       </article>
     </section>
 
     <section class="panel ping-panel">
       <div class="panel-heading">
-        <h2>iPhone Ping</h2>
-        <p>Runs Quick Fuel with your current location and posts the returned one-line message as a device notification when the browser allows it.</p>
+        <h2>Fuel Ping</h2>
+        <p>Collects two GPS points about 30 seconds apart, combines them with the saved destination, and posts the returned one-line message as a device notification when the browser allows it.</p>
       </div>
 
       <div class="button-row">
-        <button id="pingFuelButton" class="primary-button" type="button">Test Fuel Ping</button>
+        <button id="pingFuelButton" class="primary-button" type="button">Ping Fuel Ahead</button>
       </div>
     </section>
 
@@ -67,7 +96,7 @@
       <div class="collapsible-body grid two-up">
         <label>
           <span>Webhook URL</span>
-          <input id="webhookUrl" type="url" placeholder="https://your-n8n/webhook/fuel-companion-router-v1">
+          <input id="webhookUrl" type="url" placeholder="Paste https://<frontdoor>/webhook/fuel-companion-router-v1">
         </label>
 
         <label>
@@ -119,8 +148,8 @@
     <details class="panel collapsible-panel trip-panel">
       <summary class="collapsible-summary">
         <div>
-          <h2>Trip Fuel</h2>
-          <p>Current location plus a destination for route-aware scoring.</p>
+          <h2>Manual Tests</h2>
+          <p>Fallback controls for direct nearby and route payload tests.</p>
         </div>
       </summary>
 
@@ -129,6 +158,8 @@
           <span>Scenario</span>
           <select id="scenarioPreset">
             <option value="">Custom</option>
+            <option value="uk-dover-m20-live">UK live: M20 to Dover</option>
+            <option value="uk-leeds-m1-woolley-edge">UK stale-price check: M1 to Leeds</option>
             <option value="be-antwerp-rotterdam">Belgium: Antwerp to Rotterdam</option>
             <option value="de-kassel-wuerzburg">Germany: Kassel Ost to Wuerzburg</option>
             <option value="fr-angres-reims">France: Aire d'Angres to Reims</option>
@@ -136,58 +167,35 @@
         </label>
 
         <label>
-          <span>Origin Latitude</span>
-          <input id="tripLat" type="number" step="0.000001" placeholder="51.924400">
+          <span>GPS Point 1 Latitude</span>
+          <input id="tripLat" type="number" step="0.000001" value="51.468000" placeholder="51.468000">
         </label>
 
         <label>
-          <span>Origin Longitude</span>
-          <input id="tripLng" type="number" step="0.000001" placeholder="4.477700">
+          <span>GPS Point 1 Longitude</span>
+          <input id="tripLng" type="number" step="0.000001" value="0.192000" placeholder="0.192000">
         </label>
 
         <label>
-          <span>Destination Name</span>
-          <input id="destinationLabel" type="text" placeholder="Amsterdam">
+          <span>GPS Point 2 Latitude</span>
+          <input id="quickLat" type="number" step="0.000001" value="51.485000" placeholder="51.485000">
         </label>
 
         <label>
-          <span>Preset</span>
-          <select id="destinationPreset">
-            <option value="">Custom</option>
-            <option value="uk:51.129,1.308:Dover">UK: Dover</option>
-            <option value="fr:51.9244,4.4777:Rotterdam">FR: Rotterdam</option>
-            <option value="be:51.9244,4.4777:Rotterdam">BE: Rotterdam</option>
-            <option value="nl:52.3676,4.9041:Amsterdam">NL: Amsterdam</option>
-            <option value="de:49.7913,9.9534:Wuerzburg">DE: Wuerzburg</option>
-          </select>
-        </label>
-
-        <label class="search-field">
-          <span>Search Destination</span>
-          <div class="inline-action">
-            <input id="destinationSearch" type="text" placeholder="Calais Ferry, Amsterdam, Kassel Ost">
-            <button id="destinationSearchButton" class="secondary-button inline-button" type="button">Find</button>
-          </div>
+          <span>GPS Point 2 Longitude</span>
+          <input id="quickLng" type="number" step="0.000001" value="0.260000" placeholder="0.260000">
         </label>
 
         <div class="search-hint">
-          Uses OpenStreetMap geocoding only when you tap <strong>Find</strong>. No autocomplete.
+          Manual trace tests use point 1 then point 2 to simulate the iPhone action-button payload.
         </div>
-
-        <label>
-          <span>Destination Latitude</span>
-          <input id="destinationLat" type="number" step="0.000001" placeholder="52.367600">
-        </label>
-
-        <label>
-          <span>Destination Longitude</span>
-          <input id="destinationLng" type="number" step="0.000001" placeholder="4.904100">
-        </label>
       </div>
 
       <div class="button-row collapsible-actions">
         <button id="tripGeoButton" class="secondary-button" type="button">Use My Location</button>
-        <button id="tripSendButton" class="primary-button" type="button">Send Trip Fuel</button>
+        <button id="quickGeoButton" class="secondary-button" type="button">Use My Location for Quick</button>
+        <button id="quickSendButton" class="secondary-button" type="button">Send Quick Fuel</button>
+        <button id="tripSendButton" class="primary-button" type="button">Send GPS Trace Test</button>
       </div>
     </details>
 

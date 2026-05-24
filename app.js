@@ -6,8 +6,13 @@ const storageKeys = {
   fuelRemainingPercent: "fuel-companion-fuel-remaining-percent",
   distanceRemainingMiles: "fuel-companion-distance-remaining-miles",
   requireOpenNow: "fuel-companion-require-open-now",
+  destinationLabel: "fuel-companion-destination-label",
+  destinationLat: "fuel-companion-destination-lat",
+  destinationLng: "fuel-companion-destination-lng",
   deCooldownUntil: "fuel-companion-de-cooldown-until"
 };
+
+const defaultWebhookUrl = "";
 
 const elements = {
   webhookUrl: document.getElementById("webhookUrl"),
@@ -32,10 +37,13 @@ const elements = {
   tripGeoButton: document.getElementById("tripGeoButton"),
   quickSendButton: document.getElementById("quickSendButton"),
   tripSendButton: document.getElementById("tripSendButton"),
+  pingFuelButton: document.getElementById("pingFuelButton"),
+  saveDestinationButton: document.getElementById("saveDestinationButton"),
   saveSettingsButton: document.getElementById("saveSettingsButton"),
   rateLimitBanner: document.getElementById("rateLimitBanner"),
   statusBanner: document.getElementById("statusBanner"),
   searchBanner: document.getElementById("searchBanner"),
+  activeDestinationSummary: document.getElementById("activeDestinationSummary"),
   resultMessage: document.getElementById("resultMessage"),
   resultJson: document.getElementById("resultJson"),
   resultCards: document.getElementById("resultCards"),
@@ -57,26 +65,52 @@ let inFlightRequest = false;
 let deCooldownTimer = null;
 
 const scenarioPresets = {
+  "uk-dover-m20-live": {
+    country: "uk",
+    point1Lat: 51.468,
+    point1Lng: 0.192,
+    point2Lat: 51.485,
+    point2Lng: 0.26,
+    destinationLat: 51.129,
+    destinationLng: 1.308,
+    destinationLabel: "Dover"
+  },
+  "uk-leeds-m1-woolley-edge": {
+    country: "uk",
+    point1Lat: 53.5536,
+    point1Lng: -1.5669,
+    point2Lat: 53.5758,
+    point2Lng: -1.5602,
+    destinationLat: 53.797418,
+    destinationLng: -1.543794,
+    destinationLabel: "Leeds"
+  },
   "be-antwerp-rotterdam": {
     country: "be",
-    originLat: 51.2194,
-    originLng: 4.4025,
+    point1Lat: 51.2194,
+    point1Lng: 4.4025,
+    point2Lat: 51.5,
+    point2Lng: 4.44,
     destinationLat: 51.9244,
     destinationLng: 4.4777,
     destinationLabel: "Rotterdam"
   },
   "de-kassel-wuerzburg": {
     country: "de",
-    originLat: 51.26762,
-    originLng: 9.51833,
+    point1Lat: 51.26762,
+    point1Lng: 9.51833,
+    point2Lat: 51.18,
+    point2Lng: 9.62,
     destinationLat: 49.7913,
     destinationLng: 9.9534,
     destinationLabel: "Wuerzburg"
   },
   "fr-angres-reims": {
     country: "fr",
-    originLat: 50.418,
-    originLng: 2.72,
+    point1Lat: 50.418,
+    point1Lng: 2.72,
+    point2Lat: 50.35,
+    point2Lng: 2.86,
     destinationLat: 49.2583,
     destinationLng: 4.0317,
     destinationLabel: "Reims"
@@ -84,7 +118,7 @@ const scenarioPresets = {
 };
 
 function loadSavedSettings() {
-  const savedWebhookUrl = localStorage.getItem(storageKeys.webhookUrl) || "";
+  const savedWebhookUrl = localStorage.getItem(storageKeys.webhookUrl) || defaultWebhookUrl;
   elements.webhookUrl.value = savedWebhookUrl.replace("/webhook-test/", "/webhook/");
   elements.agentKey.value = localStorage.getItem(storageKeys.agentKey) || "";
   elements.country.value = localStorage.getItem(storageKeys.country) || "auto";
@@ -92,6 +126,10 @@ function loadSavedSettings() {
   elements.fuelRemainingPercent.value = localStorage.getItem(storageKeys.fuelRemainingPercent) || "50";
   elements.distanceRemainingMiles.value = localStorage.getItem(storageKeys.distanceRemainingMiles) || "45";
   elements.requireOpenNow.checked = (localStorage.getItem(storageKeys.requireOpenNow) ?? "true") === "true";
+  elements.destinationLabel.value = localStorage.getItem(storageKeys.destinationLabel) || elements.destinationLabel.value;
+  elements.destinationLat.value = localStorage.getItem(storageKeys.destinationLat) || elements.destinationLat.value;
+  elements.destinationLng.value = localStorage.getItem(storageKeys.destinationLng) || elements.destinationLng.value;
+  renderActiveDestination();
 }
 
 function saveSettings() {
@@ -102,6 +140,30 @@ function saveSettings() {
   localStorage.setItem(storageKeys.fuelRemainingPercent, elements.fuelRemainingPercent.value);
   localStorage.setItem(storageKeys.distanceRemainingMiles, elements.distanceRemainingMiles.value);
   localStorage.setItem(storageKeys.requireOpenNow, String(elements.requireOpenNow.checked));
+}
+
+function saveDestination() {
+  const label = elements.destinationLabel.value.trim();
+  const lat = numberFromField(elements.destinationLat, "Destination latitude");
+  const lng = numberFromField(elements.destinationLng, "Destination longitude");
+  if (!label) {
+    throw new Error("Destination name is required.");
+  }
+  localStorage.setItem(storageKeys.destinationLabel, label);
+  localStorage.setItem(storageKeys.destinationLat, formatCoordinate(lat));
+  localStorage.setItem(storageKeys.destinationLng, formatCoordinate(lng));
+  elements.destinationLat.value = formatCoordinate(lat);
+  elements.destinationLng.value = formatCoordinate(lng);
+  renderActiveDestination();
+}
+
+function handleSaveDestination() {
+  try {
+    saveDestination();
+    setStatus("Destination saved on this device.", "ok");
+  } catch (error) {
+    setStatus(error.message, "error");
+  }
 }
 
 function handleSaveSettings() {
@@ -118,9 +180,13 @@ function setButtonsDisabled(disabled) {
   [
     elements.quickGeoButton,
     elements.tripGeoButton,
-    elements.destinationSearchButton
+    elements.destinationSearchButton,
+    elements.pingFuelButton,
+    elements.saveDestinationButton
   ].forEach((button) => {
-    button.disabled = disabled;
+    if (button) {
+      button.disabled = disabled;
+    }
   });
 }
 
@@ -179,6 +245,23 @@ function setSearchBanner(message = "", visible = false) {
 
 function formatCoordinate(value) {
   return Number(value).toFixed(6);
+}
+
+function wait(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function renderActiveDestination() {
+  const label = elements.destinationLabel.value.trim();
+  const lat = elements.destinationLat.value.trim();
+  const lng = elements.destinationLng.value.trim();
+  if (!label || !lat || !lng) {
+    elements.activeDestinationSummary.textContent = "No active destination saved yet.";
+    elements.activeDestinationSummary.classList.remove("hidden");
+    return;
+  }
+  elements.activeDestinationSummary.textContent = `Active destination: ${label} (${lat}, ${lng})`;
+  elements.activeDestinationSummary.classList.remove("hidden");
 }
 
 function getCurrentLocation() {
@@ -286,6 +369,14 @@ function formatOptionMeta(option) {
   if (option.distance_km !== null && option.distance_km !== undefined) {
     bits.push(`${option.distance_km} km away`);
   }
+  if (option.estimated_detour_km !== null && option.estimated_detour_km !== undefined) {
+    const detourMiles = Number(option.estimated_detour_km) * 0.621371;
+    bits.push(`${detourMiles.toFixed(1)} mi detour`);
+  }
+  if (option.distance_along_route_km !== null && option.distance_along_route_km !== undefined) {
+    const routeMiles = Number(option.distance_along_route_km) * 0.621371;
+    bits.push(`${routeMiles.toFixed(1)} mi ahead`);
+  }
   if (option.price_age_hours !== null && option.price_age_hours !== undefined) {
     bits.push(`price age ${Number(option.price_age_hours).toFixed(1)} h`);
   }
@@ -357,7 +448,7 @@ function renderResultDetails(data) {
   elements.resultDelta.classList.add("hidden");
 }
 
-async function sendPayload(payload) {
+async function sendPayload(payload, options = {}) {
   const { webhookUrl } = readSharedSettings();
   const cooldownUntil = getDeCooldownUntil();
 
@@ -376,8 +467,8 @@ async function sendPayload(payload) {
     const response = await fetch(webhookUrl, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json"
+        "Accept": "application/json",
+        "Content-Type": "text/plain;charset=UTF-8"
       },
       body: JSON.stringify(payload)
     });
@@ -390,6 +481,9 @@ async function sendPayload(payload) {
     elements.resultMessage.value = message;
     elements.resultJson.textContent = JSON.stringify(data, null, 2);
     renderResultDetails(data);
+    if (options.notify) {
+      await notifyDevice(message);
+    }
     if (data.ok && String(data.request?.country || "").toLowerCase() === "de") {
       startDeCooldown();
     }
@@ -434,15 +528,35 @@ async function handleQuickFuel() {
 async function handleTripFuel() {
   try {
     const shared = readSharedSettings();
+    const point1Lat = numberFromField(elements.tripLat, "GPS point 1 latitude");
+    const point1Lng = numberFromField(elements.tripLng, "GPS point 1 longitude");
+    const point2Lat = numberFromField(elements.quickLat, "GPS point 2 latitude");
+    const point2Lng = numberFromField(elements.quickLng, "GPS point 2 longitude");
+    const now = new Date();
+    const firstTimestamp = new Date(now.getTime() - 30000).toISOString();
+    const secondTimestamp = now.toISOString();
+
     const payload = {
       agent_key: shared.agentKey,
-      lat: numberFromField(elements.tripLat, "Origin latitude"),
-      lng: numberFromField(elements.tripLng, "Origin longitude"),
+      lat: point2Lat,
+      lng: point2Lng,
       destination_lat: numberFromField(elements.destinationLat, "Destination latitude"),
       destination_lng: numberFromField(elements.destinationLng, "Destination longitude"),
       destination: elements.destinationLabel.value.trim() || "Destination",
+      gps_trace: [
+        {
+          lat: point1Lat,
+          lng: point1Lng,
+          timestamp_utc: firstTimestamp
+        },
+        {
+          lat: point2Lat,
+          lng: point2Lng,
+          timestamp_utc: secondTimestamp
+        }
+      ],
       fuel_type: shared.fuel_type,
-      trip_mode: "prefer_motorway",
+      trip_mode: "motorway_action_button",
       require_open_now: shared.require_open_now,
       fuel_remaining_percent: shared.fuel_remaining_percent,
       distance_remaining_miles: shared.distance_remaining_miles
@@ -453,6 +567,68 @@ async function handleTripFuel() {
     await sendPayload(payload);
   } catch (error) {
     setStatus(error.message, "error");
+  }
+}
+
+async function handleFuelPing() {
+  try {
+    const shared = readSharedSettings();
+    const destinationLat = numberFromField(elements.destinationLat, "Destination latitude");
+    const destinationLng = numberFromField(elements.destinationLng, "Destination longitude");
+    const destination = elements.destinationLabel.value.trim();
+    if (!destination) {
+      throw new Error("Save an active destination before using Fuel Ping.");
+    }
+
+    setStatus("Collecting first GPS point for fuel ping...", "neutral");
+    setButtonsDisabled(true);
+    const firstLocation = await getCurrentLocation();
+    setStatus("First GPS point captured. Waiting 30 seconds for direction...", "neutral");
+    await wait(30000);
+    setStatus("Collecting second GPS point for fuel ping...", "neutral");
+    const secondLocation = await getCurrentLocation();
+    populateOrigin(secondLocation.lat, secondLocation.lng);
+    const now = new Date();
+    const firstTimestamp = new Date(now.getTime() - 30000).toISOString();
+    const secondTimestamp = now.toISOString();
+
+    const payload = {
+      agent_key: shared.agentKey,
+      lat: secondLocation.lat,
+      lng: secondLocation.lng,
+      destination_lat: destinationLat,
+      destination_lng: destinationLng,
+      destination,
+      gps_trace: [
+        {
+          lat: firstLocation.lat,
+          lng: firstLocation.lng,
+          accuracy_m: firstLocation.accuracy,
+          timestamp_utc: firstTimestamp
+        },
+        {
+          lat: secondLocation.lat,
+          lng: secondLocation.lng,
+          accuracy_m: secondLocation.accuracy,
+          timestamp_utc: secondTimestamp
+        }
+      ],
+      fuel_type: shared.fuel_type,
+      trip_mode: "motorway_action_button",
+      require_open_now: shared.require_open_now,
+      fuel_remaining_percent: shared.fuel_remaining_percent,
+      distance_remaining_miles: shared.distance_remaining_miles
+    };
+
+    if (shared.country) {
+      payload.country = shared.country;
+    }
+
+    await sendPayload(payload, { notify: true });
+  } catch (error) {
+    setStatus(error.message, "error");
+  } finally {
+    setButtonsDisabled(false);
   }
 }
 
@@ -477,6 +653,8 @@ function applyPreset() {
   elements.destinationLat.value = lat;
   elements.destinationLng.value = lng;
   elements.destinationLabel.value = label;
+  elements.destinationSearch.value = label;
+  saveDestination();
   saveSettings();
   setSearchBanner(`Preset loaded: ${label}. Country stays on auto unless you override it.`, true);
 }
@@ -488,16 +666,17 @@ function applyScenarioPreset() {
   }
 
   elements.country.value = "auto";
-  elements.tripLat.value = formatCoordinate(selectedScenario.originLat);
-  elements.tripLng.value = formatCoordinate(selectedScenario.originLng);
-  elements.quickLat.value = formatCoordinate(selectedScenario.originLat);
-  elements.quickLng.value = formatCoordinate(selectedScenario.originLng);
+  elements.tripLat.value = formatCoordinate(selectedScenario.point1Lat);
+  elements.tripLng.value = formatCoordinate(selectedScenario.point1Lng);
+  elements.quickLat.value = formatCoordinate(selectedScenario.point2Lat);
+  elements.quickLng.value = formatCoordinate(selectedScenario.point2Lng);
   elements.destinationLat.value = formatCoordinate(selectedScenario.destinationLat);
   elements.destinationLng.value = formatCoordinate(selectedScenario.destinationLng);
   elements.destinationLabel.value = selectedScenario.destinationLabel;
   elements.destinationSearch.value = selectedScenario.destinationLabel;
+  saveDestination();
   saveSettings();
-  setSearchBanner(`Scenario loaded: ${selectedScenario.destinationLabel}. Country will be auto-detected from your current location.`, true);
+  setSearchBanner(`Scenario loaded: ${selectedScenario.destinationLabel}. GPS point 1 and point 2 will be sent as a trace.`, true);
 }
 
 function mapCountryCode(countryCode) {
@@ -555,6 +734,7 @@ async function searchDestination() {
     elements.destinationLat.value = Number(match.lat).toFixed(6);
     elements.destinationLng.value = Number(match.lon).toFixed(6);
     elements.destinationLabel.value = match.display_name || query;
+    saveDestination();
 
     const resolvedCountry = mapCountryCode(match.address?.country_code);
 
@@ -565,7 +745,7 @@ async function searchDestination() {
     ].filter(Boolean).join(" | ");
 
     setSearchBanner(summary, true);
-    setStatus("Destination found.", "ok");
+    setStatus("Destination found and saved.", "ok");
   } catch (error) {
     setSearchBanner("", false);
     setStatus(error.message || "Destination search failed.", "error");
@@ -589,10 +769,14 @@ async function searchDestination() {
 elements.destinationPreset.addEventListener("change", applyPreset);
 elements.scenarioPreset.addEventListener("change", applyScenarioPreset);
 elements.destinationSearchButton.addEventListener("click", searchDestination);
+elements.saveDestinationButton.addEventListener("click", handleSaveDestination);
 elements.quickGeoButton.addEventListener("click", fillLocationForAll);
 elements.tripGeoButton.addEventListener("click", fillLocationForAll);
 elements.quickSendButton.addEventListener("click", handleQuickFuel);
 elements.tripSendButton.addEventListener("click", handleTripFuel);
+if (elements.pingFuelButton) {
+  elements.pingFuelButton.addEventListener("click", handleFuelPing);
+}
 if (elements.saveSettingsButton) {
   elements.saveSettingsButton.addEventListener("click", handleSaveSettings);
 }
@@ -601,4 +785,4 @@ loadSavedSettings();
 clearOptionCard("motorway", "No motorway option yet.");
 clearOptionCard("offMotorway", "No off-motorway option yet.");
 renderDeCooldown();
-setStatus("Ready. Add your webhook URL and agent key, then use your location or type coordinates.", "neutral");
+setStatus("Ready. Paste the current webhook from the Pi helper and add your agent key.", "neutral");
