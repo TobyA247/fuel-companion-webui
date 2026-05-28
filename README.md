@@ -4,13 +4,11 @@ This folder contains a tiny static frontend for Fuel Companion.
 
 It supports:
 
-- `Quick Fuel`
-  current location only
-- `Trip Fuel`
-  current location plus destination coordinates
 - `Route Setup`
-  saved start and destination coordinates for planning, testing, and fallback heading
-- explicit destination search on tap
+  search and save a start plus destination without showing coordinates in the normal flow
+- `Fuel Ping`
+  collect two GPS points and call the n8n router
+- collapsed local settings and manual test controls for setup/debugging
 
 It is designed to be hosted on GitHub Pages and post directly to your n8n router webhook.
 
@@ -38,7 +36,7 @@ Use this URL on iPhone. Avoid opening `index.html` via `file://` for real webhoo
 
 ## Destination search
 
-The page supports one-click start and destination search using OpenStreetMap geocoding.
+The page supports one-click start and destination search using OpenStreetMap geocoding. The normal view shows only the start and destination searches; resolved labels, coordinates, presets, settings, and manual test payloads are tucked away for local setup/debugging.
 
 Important:
 

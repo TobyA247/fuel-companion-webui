@@ -21,7 +21,7 @@
       <article class="panel quick-panel">
         <div class="panel-heading">
           <h2>Route Setup</h2>
-          <p>Save a start and destination for planning, testing, and fallback direction when live GPS is incomplete.</p>
+          <p>Choose where the trip starts and where you are heading. The app keeps the route details in the background for the next fuel ping.</p>
         </div>
 
         <div id="rateLimitBanner" class="rate-limit-banner hidden"></div>
@@ -43,50 +43,55 @@
             </div>
           </label>
 
-          <label>
-            <span>Preset</span>
-            <select id="destinationPreset">
-              <option value="">Custom</option>
-              <option value="uk:51.129,1.308:Dover">UK: Dover</option>
-              <option value="uk:51.5074,-0.1278:London">UK: London</option>
-              <option value="uk:51.4545,-2.5879:Bristol">UK: Bristol</option>
-              <option value="uk:51.4700,-0.4543:Heathrow">UK: Heathrow</option>
-              <option value="fr:51.9244,4.4777:Rotterdam">FR: Rotterdam</option>
-              <option value="be:51.9244,4.4777:Rotterdam">BE: Rotterdam</option>
-              <option value="nl:52.3676,4.9041:Amsterdam">NL: Amsterdam</option>
-              <option value="de:49.7913,9.9534:Wuerzburg">DE: Wuerzburg</option>
-            </select>
-          </label>
+          <details class="route-details-panel">
+            <summary>Route details</summary>
+            <div class="grid two-up compact-grid route-details-grid">
+              <label>
+                <span>Preset</span>
+                <select id="destinationPreset">
+                  <option value="">Custom</option>
+                  <option value="uk:51.129,1.308:Dover">UK: Dover</option>
+                  <option value="uk:51.5074,-0.1278:London">UK: London</option>
+                  <option value="uk:51.4545,-2.5879:Bristol">UK: Bristol</option>
+                  <option value="uk:51.4700,-0.4543:Heathrow">UK: Heathrow</option>
+                  <option value="fr:51.9244,4.4777:Rotterdam">FR: Rotterdam</option>
+                  <option value="be:51.9244,4.4777:Rotterdam">BE: Rotterdam</option>
+                  <option value="nl:52.3676,4.9041:Amsterdam">NL: Amsterdam</option>
+                  <option value="de:49.7913,9.9534:Wuerzburg">DE: Wuerzburg</option>
+                </select>
+              </label>
 
-          <label class="search-field">
-            <span>Resolved Start</span>
-            <input id="originLabel" type="text" value="M20 near Dartford" placeholder="Bristol, England">
-          </label>
+              <label class="search-field">
+                <span>Resolved Start</span>
+                <input id="originLabel" type="text" value="M20 near Dartford" placeholder="Bristol, England">
+              </label>
 
-          <label>
-            <span>Start Latitude</span>
-            <input id="originLat" type="number" step="0.000001" value="51.468000" placeholder="51.468000">
-          </label>
+              <label>
+                <span>Start Latitude</span>
+                <input id="originLat" type="number" step="0.000001" value="51.468000" placeholder="51.468000">
+              </label>
 
-          <label>
-            <span>Start Longitude</span>
-            <input id="originLng" type="number" step="0.000001" value="0.192000" placeholder="0.192000">
-          </label>
+              <label>
+                <span>Start Longitude</span>
+                <input id="originLng" type="number" step="0.000001" value="0.192000" placeholder="0.192000">
+              </label>
 
-          <label class="search-field">
-            <span>Resolved Destination</span>
-            <input id="destinationLabel" type="text" value="Dover" placeholder="Dover, Kent, England">
-          </label>
+              <label class="search-field">
+                <span>Resolved Destination</span>
+                <input id="destinationLabel" type="text" value="Dover" placeholder="Dover, Kent, England">
+              </label>
 
-          <label>
-            <span>Destination Latitude</span>
-            <input id="destinationLat" type="number" step="0.000001" value="51.129000" placeholder="51.129000">
-          </label>
+              <label>
+                <span>Destination Latitude</span>
+                <input id="destinationLat" type="number" step="0.000001" value="51.129000" placeholder="51.129000">
+              </label>
 
-          <label>
-            <span>Destination Longitude</span>
-            <input id="destinationLng" type="number" step="0.000001" value="1.308000" placeholder="1.308000">
-          </label>
+              <label>
+                <span>Destination Longitude</span>
+                <input id="destinationLng" type="number" step="0.000001" value="1.308000" placeholder="1.308000">
+              </label>
+            </div>
+          </details>
         </div>
 
         <div id="activeDestinationSummary" class="search-banner hidden"></div>

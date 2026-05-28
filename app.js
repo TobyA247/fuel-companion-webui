@@ -197,7 +197,7 @@ function saveDestination() {
 function handleSaveDestination() {
   try {
     saveDestination();
-    setStatus("Destination saved on this device.", "ok");
+    setStatus("Route saved on this device.", "ok");
   } catch (error) {
     setStatus(error.message, "error");
   }
@@ -301,7 +301,7 @@ function renderActiveDestination() {
     elements.activeDestinationSummary.classList.remove("hidden");
     return;
   }
-  elements.activeDestinationSummary.textContent = `Active route: ${originLabel} (${originLat}, ${originLng}) to ${label} (${lat}, ${lng})`;
+  elements.activeDestinationSummary.textContent = `Active route: ${originLabel} to ${label}`;
   elements.activeDestinationSummary.classList.remove("hidden");
 }
 
@@ -729,19 +729,6 @@ function applyScenarioPreset() {
   setSearchBanner(`Scenario loaded: ${selectedScenario.destinationLabel}. GPS point 1 and point 2 will be sent as a trace.`, true);
 }
 
-function mapCountryCode(countryCode) {
-  const code = String(countryCode || "").trim().toLowerCase();
-  const mapping = {
-    gb: "uk",
-    uk: "uk",
-    fr: "fr",
-    be: "be",
-    nl: "nl",
-    de: "de"
-  };
-  return mapping[code] || "";
-}
-
 async function geocodePlace(query, label) {
   if (!query) {
     throw new Error(`Enter a ${label} search first.`);
@@ -788,14 +775,7 @@ async function searchOrigin() {
     elements.originLabel.value = match.display_name || query;
     saveDestination();
 
-    const resolvedCountry = mapCountryCode(match.address?.country_code);
-    const summary = [
-      match.display_name || query,
-      resolvedCountry ? `start country ${resolvedCountry.toUpperCase()}` : null,
-      "start saved for route context"
-    ].filter(Boolean).join(" | ");
-
-    setSearchBanner(summary, true);
+    setSearchBanner(`Start saved: ${match.display_name || query}`, true);
     setStatus("Start found and saved.", "ok");
   } catch (error) {
     setSearchBanner("", false);
@@ -818,15 +798,7 @@ async function searchDestination() {
     elements.destinationLabel.value = match.display_name || query;
     saveDestination();
 
-    const resolvedCountry = mapCountryCode(match.address?.country_code);
-
-    const summary = [
-      match.display_name || query,
-      resolvedCountry ? `destination country ${resolvedCountry.toUpperCase()}` : null,
-      elements.country.value === "auto" ? "routing country still auto-detected from origin" : `country override ${elements.country.value.toUpperCase()}`
-    ].filter(Boolean).join(" | ");
-
-    setSearchBanner(summary, true);
+    setSearchBanner(`Destination saved: ${match.display_name || query}`, true);
     setStatus("Destination found and saved.", "ok");
   } catch (error) {
     setSearchBanner("", false);

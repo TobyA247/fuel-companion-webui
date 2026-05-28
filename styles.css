@@ -203,6 +203,23 @@ textarea:focus {
   margin-top: -4px;
 }
 
+.route-details-panel {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.route-details-panel summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-weight: 700;
+  list-style-position: inside;
+}
+
+.route-details-grid {
+  margin-top: 14px;
+}
+
 .settings-actions {
   grid-column: 1 / -1;
 }
