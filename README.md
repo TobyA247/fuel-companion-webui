@@ -8,6 +8,8 @@ It supports:
   current location only
 - `Trip Fuel`
   current location plus destination coordinates
+- `Route Setup`
+  saved start and destination coordinates for planning, testing, and fallback heading
 - explicit destination search on tap
 
 It is designed to be hosted on GitHub Pages and post directly to your n8n router webhook.
@@ -36,7 +38,7 @@ Use this URL on iPhone. Avoid opening `index.html` via `file://` for real webhoo
 
 ## Destination search
 
-The page supports one-click destination search using OpenStreetMap geocoding.
+The page supports one-click start and destination search using OpenStreetMap geocoding.
 
 Important:
 
@@ -44,6 +46,8 @@ Important:
 - it does not use autocomplete
 - this keeps usage light for a personal prototype
 - GitHub Pages provides the HTTPS and referer needed for a browser-based page
+
+The iPhone fuel ping still prefers two live GPS points for direction of travel. The saved start point is sent as fallback context when GPS trace is unavailable or too short.
 
 ## Files
 

@@ -20,13 +20,21 @@
     <section class="quick-fuel-main">
       <article class="panel quick-panel">
         <div class="panel-heading">
-          <h2>Active Destination</h2>
-          <p>Find a place once and save its coordinates for the next motorway fuel ping.</p>
+          <h2>Route Setup</h2>
+          <p>Save a start and destination for planning, testing, and fallback direction when live GPS is incomplete.</p>
         </div>
 
         <div id="rateLimitBanner" class="rate-limit-banner hidden"></div>
 
         <div class="grid two-up compact-grid">
+          <label class="search-field">
+            <span>Search Start</span>
+            <div class="inline-action">
+              <input id="originSearch" type="text" placeholder="Bristol, Leeds, London, Heathrow">
+              <button id="originSearchButton" class="secondary-button inline-button" type="button">Find</button>
+            </div>
+          </label>
+
           <label class="search-field">
             <span>Search Destination</span>
             <div class="inline-action">
@@ -51,6 +59,21 @@
           </label>
 
           <label class="search-field">
+            <span>Resolved Start</span>
+            <input id="originLabel" type="text" value="M20 near Dartford" placeholder="Bristol, England">
+          </label>
+
+          <label>
+            <span>Start Latitude</span>
+            <input id="originLat" type="number" step="0.000001" value="51.468000" placeholder="51.468000">
+          </label>
+
+          <label>
+            <span>Start Longitude</span>
+            <input id="originLng" type="number" step="0.000001" value="0.192000" placeholder="0.192000">
+          </label>
+
+          <label class="search-field">
             <span>Resolved Destination</span>
             <input id="destinationLabel" type="text" value="Dover" placeholder="Dover, Kent, England">
           </label>
@@ -69,7 +92,7 @@
         <div id="activeDestinationSummary" class="search-banner hidden"></div>
 
         <div class="button-row">
-          <button id="saveDestinationButton" class="secondary-button" type="button">Save Destination</button>
+          <button id="saveDestinationButton" class="secondary-button" type="button">Save Route</button>
         </div>
       </article>
     </section>

@@ -6,6 +6,9 @@ const storageKeys = {
   fuelRemainingPercent: "fuel-companion-fuel-remaining-percent",
   distanceRemainingMiles: "fuel-companion-distance-remaining-miles",
   requireOpenNow: "fuel-companion-require-open-now",
+  originLabel: "fuel-companion-origin-label",
+  originLat: "fuel-companion-origin-lat",
+  originLng: "fuel-companion-origin-lng",
   destinationLabel: "fuel-companion-destination-label",
   destinationLat: "fuel-companion-destination-lat",
   destinationLng: "fuel-companion-destination-lng",
@@ -27,6 +30,11 @@ const elements = {
   tripLat: document.getElementById("tripLat"),
   tripLng: document.getElementById("tripLng"),
   scenarioPreset: document.getElementById("scenarioPreset"),
+  originLabel: document.getElementById("originLabel"),
+  originSearch: document.getElementById("originSearch"),
+  originSearchButton: document.getElementById("originSearchButton"),
+  originLat: document.getElementById("originLat"),
+  originLng: document.getElementById("originLng"),
   destinationLabel: document.getElementById("destinationLabel"),
   destinationPreset: document.getElementById("destinationPreset"),
   destinationSearch: document.getElementById("destinationSearch"),
@@ -67,6 +75,9 @@ let deCooldownTimer = null;
 const scenarioPresets = {
   "uk-dover-m20-live": {
     country: "uk",
+    originLat: 51.468,
+    originLng: 0.192,
+    originLabel: "M20 near Dartford",
     point1Lat: 51.468,
     point1Lng: 0.192,
     point2Lat: 51.485,
@@ -77,6 +88,9 @@ const scenarioPresets = {
   },
   "uk-leeds-m1-woolley-edge": {
     country: "uk",
+    originLat: 53.5536,
+    originLng: -1.5669,
+    originLabel: "M1 near Barnsley",
     point1Lat: 53.5536,
     point1Lng: -1.5669,
     point2Lat: 53.5758,
@@ -87,6 +101,9 @@ const scenarioPresets = {
   },
   "be-antwerp-rotterdam": {
     country: "be",
+    originLat: 51.2194,
+    originLng: 4.4025,
+    originLabel: "Antwerp",
     point1Lat: 51.2194,
     point1Lng: 4.4025,
     point2Lat: 51.5,
@@ -97,6 +114,9 @@ const scenarioPresets = {
   },
   "de-kassel-wuerzburg": {
     country: "de",
+    originLat: 51.26762,
+    originLng: 9.51833,
+    originLabel: "Kassel Ost",
     point1Lat: 51.26762,
     point1Lng: 9.51833,
     point2Lat: 51.18,
@@ -107,6 +127,9 @@ const scenarioPresets = {
   },
   "fr-angres-reims": {
     country: "fr",
+    originLat: 50.418,
+    originLng: 2.72,
+    originLabel: "Aire d'Angres",
     point1Lat: 50.418,
     point1Lng: 2.72,
     point2Lat: 50.35,
@@ -126,6 +149,9 @@ function loadSavedSettings() {
   elements.fuelRemainingPercent.value = localStorage.getItem(storageKeys.fuelRemainingPercent) || "50";
   elements.distanceRemainingMiles.value = localStorage.getItem(storageKeys.distanceRemainingMiles) || "45";
   elements.requireOpenNow.checked = (localStorage.getItem(storageKeys.requireOpenNow) ?? "true") === "true";
+  elements.originLabel.value = localStorage.getItem(storageKeys.originLabel) || elements.originLabel.value;
+  elements.originLat.value = localStorage.getItem(storageKeys.originLat) || elements.originLat.value;
+  elements.originLng.value = localStorage.getItem(storageKeys.originLng) || elements.originLng.value;
   elements.destinationLabel.value = localStorage.getItem(storageKeys.destinationLabel) || elements.destinationLabel.value;
   elements.destinationLat.value = localStorage.getItem(storageKeys.destinationLat) || elements.destinationLat.value;
   elements.destinationLng.value = localStorage.getItem(storageKeys.destinationLng) || elements.destinationLng.value;
@@ -143,15 +169,26 @@ function saveSettings() {
 }
 
 function saveDestination() {
+  const originLabel = elements.originLabel.value.trim();
+  const originLat = numberFromField(elements.originLat, "Start latitude");
+  const originLng = numberFromField(elements.originLng, "Start longitude");
   const label = elements.destinationLabel.value.trim();
   const lat = numberFromField(elements.destinationLat, "Destination latitude");
   const lng = numberFromField(elements.destinationLng, "Destination longitude");
+  if (!originLabel) {
+    throw new Error("Start name is required.");
+  }
   if (!label) {
     throw new Error("Destination name is required.");
   }
+  localStorage.setItem(storageKeys.originLabel, originLabel);
+  localStorage.setItem(storageKeys.originLat, formatCoordinate(originLat));
+  localStorage.setItem(storageKeys.originLng, formatCoordinate(originLng));
   localStorage.setItem(storageKeys.destinationLabel, label);
   localStorage.setItem(storageKeys.destinationLat, formatCoordinate(lat));
   localStorage.setItem(storageKeys.destinationLng, formatCoordinate(lng));
+  elements.originLat.value = formatCoordinate(originLat);
+  elements.originLng.value = formatCoordinate(originLng);
   elements.destinationLat.value = formatCoordinate(lat);
   elements.destinationLng.value = formatCoordinate(lng);
   renderActiveDestination();
@@ -180,6 +217,7 @@ function setButtonsDisabled(disabled) {
   [
     elements.quickGeoButton,
     elements.tripGeoButton,
+    elements.originSearchButton,
     elements.destinationSearchButton,
     elements.pingFuelButton,
     elements.saveDestinationButton
@@ -252,15 +290,18 @@ function wait(ms) {
 }
 
 function renderActiveDestination() {
+  const originLabel = elements.originLabel.value.trim();
+  const originLat = elements.originLat.value.trim();
+  const originLng = elements.originLng.value.trim();
   const label = elements.destinationLabel.value.trim();
   const lat = elements.destinationLat.value.trim();
   const lng = elements.destinationLng.value.trim();
-  if (!label || !lat || !lng) {
-    elements.activeDestinationSummary.textContent = "No active destination saved yet.";
+  if (!originLabel || !originLat || !originLng || !label || !lat || !lng) {
+    elements.activeDestinationSummary.textContent = "No complete route saved yet.";
     elements.activeDestinationSummary.classList.remove("hidden");
     return;
   }
-  elements.activeDestinationSummary.textContent = `Active destination: ${label} (${lat}, ${lng})`;
+  elements.activeDestinationSummary.textContent = `Active route: ${originLabel} (${originLat}, ${originLng}) to ${label} (${lat}, ${lng})`;
   elements.activeDestinationSummary.classList.remove("hidden");
 }
 
@@ -322,6 +363,17 @@ function readSharedSettings() {
     require_open_now: elements.requireOpenNow.checked,
     fuel_remaining_percent: Number(elements.fuelRemainingPercent.value || 0),
     distance_remaining_miles: Number(elements.distanceRemainingMiles.value || 0)
+  };
+}
+
+function readRouteContext() {
+  return {
+    origin_label: elements.originLabel.value.trim() || null,
+    origin_lat: numberFromField(elements.originLat, "Start latitude"),
+    origin_lng: numberFromField(elements.originLng, "Start longitude"),
+    destination: elements.destinationLabel.value.trim() || "Destination",
+    destination_lat: numberFromField(elements.destinationLat, "Destination latitude"),
+    destination_lng: numberFromField(elements.destinationLng, "Destination longitude")
   };
 }
 
@@ -540,9 +592,7 @@ async function handleTripFuel() {
       agent_key: shared.agentKey,
       lat: point2Lat,
       lng: point2Lng,
-      destination_lat: numberFromField(elements.destinationLat, "Destination latitude"),
-      destination_lng: numberFromField(elements.destinationLng, "Destination longitude"),
-      destination: elements.destinationLabel.value.trim() || "Destination",
+      ...readRouteContext(),
       gps_trace: [
         {
           lat: point1Lat,
@@ -573,10 +623,8 @@ async function handleTripFuel() {
 async function handleFuelPing() {
   try {
     const shared = readSharedSettings();
-    const destinationLat = numberFromField(elements.destinationLat, "Destination latitude");
-    const destinationLng = numberFromField(elements.destinationLng, "Destination longitude");
-    const destination = elements.destinationLabel.value.trim();
-    if (!destination) {
+    const route = readRouteContext();
+    if (!route.destination) {
       throw new Error("Save an active destination before using Fuel Ping.");
     }
 
@@ -596,9 +644,7 @@ async function handleFuelPing() {
       agent_key: shared.agentKey,
       lat: secondLocation.lat,
       lng: secondLocation.lng,
-      destination_lat: destinationLat,
-      destination_lng: destinationLng,
-      destination,
+      ...route,
       gps_trace: [
         {
           lat: firstLocation.lat,
@@ -666,6 +712,10 @@ function applyScenarioPreset() {
   }
 
   elements.country.value = "auto";
+  elements.originLat.value = formatCoordinate(selectedScenario.originLat);
+  elements.originLng.value = formatCoordinate(selectedScenario.originLng);
+  elements.originLabel.value = selectedScenario.originLabel;
+  elements.originSearch.value = selectedScenario.originLabel;
   elements.tripLat.value = formatCoordinate(selectedScenario.point1Lat);
   elements.tripLng.value = formatCoordinate(selectedScenario.point1Lng);
   elements.quickLat.value = formatCoordinate(selectedScenario.point2Lat);
@@ -692,45 +742,77 @@ function mapCountryCode(countryCode) {
   return mapping[code] || "";
 }
 
-async function searchDestination() {
-  const query = elements.destinationSearch.value.trim();
+async function geocodePlace(query, label) {
   if (!query) {
-    setStatus("Enter a destination search first.", "error");
-    return;
+    throw new Error(`Enter a ${label} search first.`);
   }
 
   if (query.length < 3) {
-    setStatus("Destination search must be at least 3 characters.", "error");
-    return;
+    throw new Error(`${label} search must be at least 3 characters.`);
   }
 
+  const url = new URL("https://nominatim.openstreetmap.org/search");
+  url.searchParams.set("q", query);
+  url.searchParams.set("format", "jsonv2");
+  url.searchParams.set("limit", "1");
+  url.searchParams.set("addressdetails", "1");
+
+  const response = await fetch(url, {
+    headers: {
+      "Accept": "application/json"
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`${label} search failed.`);
+  }
+
+  const results = await response.json();
+  if (!Array.isArray(results) || results.length === 0) {
+    throw new Error(`No ${label} match found.`);
+  }
+
+  return results[0];
+}
+
+async function searchOrigin() {
+  const query = elements.originSearch.value.trim();
+  setButtonsDisabled(true);
+  setStatus("Searching start...", "neutral");
+  setSearchBanner("", false);
+
+  try {
+    const match = await geocodePlace(query, "start");
+    elements.originLat.value = Number(match.lat).toFixed(6);
+    elements.originLng.value = Number(match.lon).toFixed(6);
+    elements.originLabel.value = match.display_name || query;
+    saveDestination();
+
+    const resolvedCountry = mapCountryCode(match.address?.country_code);
+    const summary = [
+      match.display_name || query,
+      resolvedCountry ? `start country ${resolvedCountry.toUpperCase()}` : null,
+      "start saved for route context"
+    ].filter(Boolean).join(" | ");
+
+    setSearchBanner(summary, true);
+    setStatus("Start found and saved.", "ok");
+  } catch (error) {
+    setSearchBanner("", false);
+    setStatus(error.message || "Start search failed.", "error");
+  } finally {
+    setButtonsDisabled(false);
+  }
+}
+
+async function searchDestination() {
+  const query = elements.destinationSearch.value.trim();
   setButtonsDisabled(true);
   setStatus("Searching destination...", "neutral");
   setSearchBanner("", false);
 
   try {
-    const url = new URL("https://nominatim.openstreetmap.org/search");
-    url.searchParams.set("q", query);
-    url.searchParams.set("format", "jsonv2");
-    url.searchParams.set("limit", "1");
-    url.searchParams.set("addressdetails", "1");
-
-    const response = await fetch(url, {
-      headers: {
-        "Accept": "application/json"
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error("Destination search failed.");
-    }
-
-    const results = await response.json();
-    if (!Array.isArray(results) || results.length === 0) {
-      throw new Error("No destination match found.");
-    }
-
-    const match = results[0];
+    const match = await geocodePlace(query, "destination");
     elements.destinationLat.value = Number(match.lat).toFixed(6);
     elements.destinationLng.value = Number(match.lon).toFixed(6);
     elements.destinationLabel.value = match.display_name || query;
@@ -768,6 +850,7 @@ async function searchDestination() {
 
 elements.destinationPreset.addEventListener("change", applyPreset);
 elements.scenarioPreset.addEventListener("change", applyScenarioPreset);
+elements.originSearchButton.addEventListener("click", searchOrigin);
 elements.destinationSearchButton.addEventListener("click", searchDestination);
 elements.saveDestinationButton.addEventListener("click", handleSaveDestination);
 elements.quickGeoButton.addEventListener("click", fillLocationForAll);
