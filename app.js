@@ -484,6 +484,22 @@ function formatPrice(option) {
   return `${amount} ${currency}/${unit}`.trim();
 }
 
+function formatDistanceMilesFromKm(distanceKm) {
+  const miles = Number(distanceKm) * 0.621371;
+  return `${miles.toFixed(1)} mi away`;
+}
+
+function formatPriceAge(hoursValue) {
+  const hours = Number(hoursValue);
+  if (Number.isNaN(hours)) {
+    return "price age unknown";
+  }
+  if (hours >= 48) {
+    return `price age ${(hours / 24).toFixed(1)} days`;
+  }
+  return `price age ${hours.toFixed(1)} h`;
+}
+
 function formatOptionMeta(option) {
   if (!option) {
     return "";
@@ -494,7 +510,7 @@ function formatOptionMeta(option) {
     bits.push(option.brand);
   }
   if (option.distance_km !== null && option.distance_km !== undefined) {
-    bits.push(`${option.distance_km} km away`);
+    bits.push(formatDistanceMilesFromKm(option.distance_km));
   }
   if (option.estimated_detour_km !== null && option.estimated_detour_km !== undefined) {
     const detourMiles = Number(option.estimated_detour_km) * 0.621371;
@@ -505,7 +521,10 @@ function formatOptionMeta(option) {
     bits.push(`${routeMiles.toFixed(1)} mi ahead`);
   }
   if (option.price_age_hours !== null && option.price_age_hours !== undefined) {
-    bits.push(`price age ${Number(option.price_age_hours).toFixed(1)} h`);
+    bits.push(formatPriceAge(option.price_age_hours));
+  }
+  if (option.is_price_stale || option.price_freshness === "stale") {
+    bits.push("stale price");
   }
   if (option.opening_status) {
     bits.push(String(option.opening_status).replaceAll("_", " "));
