@@ -9,7 +9,7 @@ It supports:
 - `Fuel Ahead`
   collect two GPS points and call the n8n router
 - `Nearby Fuel`
-  collect one GPS point and call the separate stationary nearby webhook
+  select diesel or petrol, collect one GPS point, and call the separate stationary nearby webhook
 - collapsed local settings and manual test controls for setup/debugging
 
 It is designed to be hosted on GitHub Pages and post directly to your n8n webhooks.

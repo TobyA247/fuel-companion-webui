@@ -102,14 +102,32 @@
       </article>
     </section>
 
+    <section class="panel nearby-panel">
+      <div class="panel-heading">
+        <h2>Nearby Fuel</h2>
+        <p>Use when parked or in town and you just want nearby prices from your current location.</p>
+      </div>
+
+      <div class="nearby-controls">
+        <label>
+          <span>Select Fuel</span>
+          <select id="nearbyFuelType">
+            <option value="diesel">Diesel</option>
+            <option value="petrol">Petrol</option>
+          </select>
+        </label>
+
+        <button id="nearbyFuelButton" class="primary-button" type="button">Nearby Fuel</button>
+      </div>
+    </section>
+
     <section class="panel ping-panel">
       <div class="panel-heading">
         <h2>Fuel Ping</h2>
-        <p>Use Fuel Ahead while travelling. Use Nearby Fuel when parked or in town and you just want the best nearby prices.</p>
+        <p>Use while travelling. The request sends two GPS points plus the saved route so the workflow can look ahead.</p>
       </div>
 
       <div class="button-row">
-        <button id="nearbyFuelButton" class="secondary-button" type="button">Nearby Fuel</button>
         <button id="pingFuelButton" class="primary-button" type="button">Ping Fuel Ahead</button>
       </div>
     </section>
@@ -287,6 +305,6 @@
     </section>
   </main>
 
-  <script src="./app.js?v=20260529-notify-fix"></script>
+  <script src="./app.js?v=20260529-nearby-fuel-select"></script>
 </body>
 </html>

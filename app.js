@@ -3,6 +3,7 @@ const storageKeys = {
   agentKey: "fuel-companion-agent-key",
   country: "fuel-companion-country",
   fuelType: "fuel-companion-fuel-type",
+  nearbyFuelType: "fuel-companion-nearby-fuel-type",
   fuelRemainingPercent: "fuel-companion-fuel-remaining-percent",
   distanceRemainingMiles: "fuel-companion-distance-remaining-miles",
   requireOpenNow: "fuel-companion-require-open-now",
@@ -22,6 +23,7 @@ const elements = {
   agentKey: document.getElementById("agentKey"),
   country: document.getElementById("country"),
   fuelType: document.getElementById("fuelType"),
+  nearbyFuelType: document.getElementById("nearbyFuelType"),
   fuelRemainingPercent: document.getElementById("fuelRemainingPercent"),
   distanceRemainingMiles: document.getElementById("distanceRemainingMiles"),
   requireOpenNow: document.getElementById("requireOpenNow"),
@@ -158,6 +160,7 @@ function loadSavedSettings() {
   elements.agentKey.value = localStorage.getItem(storageKeys.agentKey) || "";
   elements.country.value = localStorage.getItem(storageKeys.country) || "auto";
   elements.fuelType.value = localStorage.getItem(storageKeys.fuelType) || "diesel";
+  elements.nearbyFuelType.value = localStorage.getItem(storageKeys.nearbyFuelType) || elements.fuelType.value || "diesel";
   elements.fuelRemainingPercent.value = localStorage.getItem(storageKeys.fuelRemainingPercent) || "50";
   elements.distanceRemainingMiles.value = localStorage.getItem(storageKeys.distanceRemainingMiles) || "45";
   elements.requireOpenNow.checked = (localStorage.getItem(storageKeys.requireOpenNow) ?? "true") === "true";
@@ -175,6 +178,7 @@ function saveSettings() {
   localStorage.setItem(storageKeys.agentKey, elements.agentKey.value.trim());
   localStorage.setItem(storageKeys.country, elements.country.value);
   localStorage.setItem(storageKeys.fuelType, elements.fuelType.value);
+  localStorage.setItem(storageKeys.nearbyFuelType, elements.nearbyFuelType.value);
   localStorage.setItem(storageKeys.fuelRemainingPercent, elements.fuelRemainingPercent.value);
   localStorage.setItem(storageKeys.distanceRemainingMiles, elements.distanceRemainingMiles.value);
   localStorage.setItem(storageKeys.requireOpenNow, String(elements.requireOpenNow.checked));
@@ -681,7 +685,7 @@ async function handleNearbyFuel() {
       agent_key: shared.agentKey,
       lat: location.lat,
       lng: location.lng,
-      fuel_type: shared.fuel_type,
+      fuel_type: elements.nearbyFuelType.value,
       trip_mode: "nearby_now",
       require_open_now: shared.require_open_now,
       request_time_utc: new Date().toISOString()
@@ -939,6 +943,7 @@ async function searchDestination() {
   elements.agentKey,
   elements.country,
   elements.fuelType,
+  elements.nearbyFuelType,
   elements.fuelRemainingPercent,
   elements.distanceRemainingMiles,
   elements.requireOpenNow

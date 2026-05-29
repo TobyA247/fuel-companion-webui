@@ -92,6 +92,11 @@ button {
   margin-bottom: 22px;
 }
 
+.nearby-panel,
+.ping-panel {
+  margin-bottom: 22px;
+}
+
 .quick-fuel-main {
   margin-bottom: 22px;
 }
@@ -178,6 +183,17 @@ textarea:focus {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+.nearby-controls {
+  display: grid;
+  grid-template-columns: minmax(160px, 260px) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.nearby-controls button {
+  min-height: 48px;
 }
 
 .inline-action {
@@ -484,6 +500,14 @@ pre {
   }
 
   .button-row button {
+    width: 100%;
+  }
+
+  .nearby-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .nearby-controls button {
     width: 100%;
   }
 
