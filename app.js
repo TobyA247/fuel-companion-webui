@@ -302,6 +302,24 @@ function wait(ms) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
+async function notifyDevice(message) {
+  if (!("Notification" in window)) {
+    return;
+  }
+
+  try {
+    let permission = Notification.permission;
+    if (permission === "default") {
+      permission = await Notification.requestPermission();
+    }
+    if (permission === "granted") {
+      new Notification("Fuel Companion", { body: message });
+    }
+  } catch {
+    // Notifications are best-effort only; never fail the fuel result.
+  }
+}
+
 function renderActiveDestination() {
   const originLabel = elements.originLabel.value.trim();
   const originLat = elements.originLat.value.trim();
