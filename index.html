@@ -105,10 +105,11 @@
     <section class="panel ping-panel">
       <div class="panel-heading">
         <h2>Fuel Ping</h2>
-        <p>Collects two GPS points about 30 seconds apart, combines them with the saved destination, and posts the returned one-line message as a device notification when the browser allows it.</p>
+        <p>Use Fuel Ahead while travelling. Use Nearby Fuel when parked or in town and you just want the best nearby prices.</p>
       </div>
 
       <div class="button-row">
+        <button id="nearbyFuelButton" class="secondary-button" type="button">Nearby Fuel</button>
         <button id="pingFuelButton" class="primary-button" type="button">Ping Fuel Ahead</button>
       </div>
     </section>
@@ -245,7 +246,7 @@
       <div id="resultCards" class="result-cards hidden">
         <article class="result-card" id="motorwayCard">
           <div class="result-card-header">
-            <h3>Motorway</h3>
+            <h3 id="motorwayTitle">Motorway</h3>
             <span id="motorwayPrice" class="result-price">n/a</span>
           </div>
           <p id="motorwayName" class="result-name">No motorway option yet.</p>
@@ -256,13 +257,24 @@
 
         <article class="result-card" id="offMotorwayCard">
           <div class="result-card-header">
-            <h3>Off motorway</h3>
+            <h3 id="offMotorwayTitle">Off motorway</h3>
             <span id="offMotorwayPrice" class="result-price">n/a</span>
           </div>
           <p id="offMotorwayName" class="result-name">No off-motorway option yet.</p>
           <p id="offMotorwayMeta" class="result-meta"></p>
           <p id="offMotorwayAddress" class="result-address"></p>
           <p id="offMotorwayNote" class="result-note"></p>
+        </article>
+
+        <article class="result-card hidden" id="nearbyThirdCard">
+          <div class="result-card-header">
+            <h3 id="nearbyThirdTitle">Nearby 3</h3>
+            <span id="nearbyThirdPrice" class="result-price">n/a</span>
+          </div>
+          <p id="nearbyThirdName" class="result-name">No nearby option yet.</p>
+          <p id="nearbyThirdMeta" class="result-meta"></p>
+          <p id="nearbyThirdAddress" class="result-address"></p>
+          <p id="nearbyThirdNote" class="result-note"></p>
         </article>
       </div>
 
@@ -276,97 +288,5 @@
   </main>
 
   <script src="./app.js"></script>
-  <script>
-    (function () {
-      const pingButton = document.getElementById("pingFuelButton");
-      if (!pingButton) return;
-
-      const statusBanner = document.getElementById("statusBanner");
-      const resultMessage = document.getElementById("resultMessage");
-      const resultJson = document.getElementById("resultJson");
-
-      const setPingStatus = (message, tone) => {
-        if (!statusBanner) return;
-        statusBanner.textContent = message;
-        statusBanner.className = `status-banner ${tone || "neutral"}`;
-      };
-
-      const getLocation = () => new Promise((resolve, reject) => {
-        if (!navigator.geolocation) {
-          reject(new Error("Geolocation is not available in this browser."));
-          return;
-        }
-        navigator.geolocation.getCurrentPosition(
-          (position) => resolve(position.coords),
-          (error) => reject(new Error(error.message || "Location request failed.")),
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
-        );
-      });
-
-      const notify = async (message) => {
-        if (!("Notification" in window)) {
-          window.alert(message);
-          return;
-        }
-        let permission = Notification.permission;
-        if (permission === "default") {
-          permission = await Notification.requestPermission();
-        }
-        if (permission === "granted") {
-          new Notification("Fuel Companion", { body: message });
-        } else {
-          window.alert(message);
-        }
-      };
-
-      pingButton.addEventListener("click", async () => {
-        try {
-          const webhookUrl = document.getElementById("webhookUrl").value.trim();
-          const agentKey = document.getElementById("agentKey").value.trim();
-          const countryValue = document.getElementById("country").value;
-          if (!webhookUrl) throw new Error("Enter your webhook URL first.");
-          if (!agentKey) throw new Error("Enter your agent key first.");
-
-          setPingStatus("Requesting current location for fuel ping...", "neutral");
-          pingButton.disabled = true;
-          const coords = await getLocation();
-          document.getElementById("quickLat").value = Number(coords.latitude).toFixed(6);
-          document.getElementById("quickLng").value = Number(coords.longitude).toFixed(6);
-
-          const payload = {
-            agent_key: agentKey,
-            lat: coords.latitude,
-            lng: coords.longitude,
-            fuel_type: document.getElementById("fuelType").value,
-            trip_mode: "nearby_now",
-            require_open_now: document.getElementById("requireOpenNow").checked,
-            fuel_remaining_percent: Number(document.getElementById("fuelRemainingPercent").value || 0),
-            distance_remaining_miles: Number(document.getElementById("distanceRemainingMiles").value || 0)
-          };
-          if (countryValue !== "auto") payload.country = countryValue;
-
-          setPingStatus("Sending fuel ping...", "neutral");
-          const response = await fetch(webhookUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Accept": "application/json" },
-            body: JSON.stringify(payload)
-          });
-          const data = await response.json();
-          const message = String(data.message || data.carplay_response?.short_message || data.carplay_response?.speak_message || "No message returned.")
-            .replaceAll("Off motorway:", "Off M/way:")
-            .replaceAll("Off motorway max:", "Off M/way max:");
-
-          if (resultMessage) resultMessage.value = message;
-          if (resultJson) resultJson.textContent = JSON.stringify(data, null, 2);
-          await notify(message);
-          setPingStatus(data.ok ? "Fuel ping completed." : "Fuel ping returned an error.", data.ok ? "ok" : "error");
-        } catch (error) {
-          setPingStatus(error.message || "Fuel ping failed.", "error");
-        } finally {
-          pingButton.disabled = false;
-        }
-      });
-    }());
-  </script>
 </body>
 </html>

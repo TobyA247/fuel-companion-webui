@@ -373,6 +373,10 @@ button:active {
   background: rgba(255, 255, 255, 0.78);
 }
 
+.result-card.hidden {
+  display: none;
+}
+
 .result-card-header {
   display: flex;
   justify-content: space-between;

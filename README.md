@@ -6,11 +6,13 @@ It supports:
 
 - `Route Setup`
   search and save a start plus destination without showing coordinates in the normal flow
-- `Fuel Ping`
+- `Fuel Ahead`
   collect two GPS points and call the n8n router
+- `Nearby Fuel`
+  collect one GPS point and call the separate stationary nearby webhook
 - collapsed local settings and manual test controls for setup/debugging
 
-It is designed to be hosted on GitHub Pages and post directly to your n8n router webhook.
+It is designed to be hosted on GitHub Pages and post directly to your n8n webhooks.
 
 Current status: the page expects the current Pi-hosted n8n webhook URL from the tunnel helper. The Cloudflare quick-tunnel hostname changes after some Pi/container restarts, so do not hard-code an old hostname into the page.
 
@@ -66,6 +68,14 @@ Use it with the standard router production path:
 ```text
 https://<current-cloudflare-host>/webhook/fuel-companion-router-v1
 ```
+
+The `Nearby Fuel` button derives its own endpoint from the same saved URL:
+
+```text
+https://<current-cloudflare-host>/webhook/fuel-companion-nearby-v1
+```
+
+So the UI only needs the current router webhook pasted once.
 
 The UI sends JSON as `text/plain` on purpose. This keeps the browser request simple and avoids an extra CORS preflight through the temporary Cloudflare quick tunnel. The n8n country router parses this format and returns CORS headers.
 

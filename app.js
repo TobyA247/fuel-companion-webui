@@ -45,6 +45,7 @@ const elements = {
   tripGeoButton: document.getElementById("tripGeoButton"),
   quickSendButton: document.getElementById("quickSendButton"),
   tripSendButton: document.getElementById("tripSendButton"),
+  nearbyFuelButton: document.getElementById("nearbyFuelButton"),
   pingFuelButton: document.getElementById("pingFuelButton"),
   saveDestinationButton: document.getElementById("saveDestinationButton"),
   saveSettingsButton: document.getElementById("saveSettingsButton"),
@@ -56,6 +57,11 @@ const elements = {
   resultJson: document.getElementById("resultJson"),
   resultCards: document.getElementById("resultCards"),
   resultDelta: document.getElementById("resultDelta"),
+  motorwayCard: document.getElementById("motorwayCard"),
+  offMotorwayCard: document.getElementById("offMotorwayCard"),
+  nearbyThirdCard: document.getElementById("nearbyThirdCard"),
+  motorwayTitle: document.getElementById("motorwayTitle"),
+  offMotorwayTitle: document.getElementById("offMotorwayTitle"),
   motorwayPrice: document.getElementById("motorwayPrice"),
   motorwayName: document.getElementById("motorwayName"),
   motorwayMeta: document.getElementById("motorwayMeta"),
@@ -65,7 +71,13 @@ const elements = {
   offMotorwayName: document.getElementById("offMotorwayName"),
   offMotorwayMeta: document.getElementById("offMotorwayMeta"),
   offMotorwayAddress: document.getElementById("offMotorwayAddress"),
-  offMotorwayNote: document.getElementById("offMotorwayNote")
+  offMotorwayNote: document.getElementById("offMotorwayNote"),
+  nearbyThirdTitle: document.getElementById("nearbyThirdTitle"),
+  nearbyThirdPrice: document.getElementById("nearbyThirdPrice"),
+  nearbyThirdName: document.getElementById("nearbyThirdName"),
+  nearbyThirdMeta: document.getElementById("nearbyThirdMeta"),
+  nearbyThirdAddress: document.getElementById("nearbyThirdAddress"),
+  nearbyThirdNote: document.getElementById("nearbyThirdNote")
 };
 
 const deCooldownMs = 5 * 60 * 1000;
@@ -219,6 +231,7 @@ function setButtonsDisabled(disabled) {
     elements.tripGeoButton,
     elements.originSearchButton,
     elements.destinationSearchButton,
+    elements.nearbyFuelButton,
     elements.pingFuelButton,
     elements.saveDestinationButton
   ].forEach((button) => {
@@ -366,6 +379,29 @@ function readSharedSettings() {
   };
 }
 
+function deriveWebhookUrl(path) {
+  const rawUrl = elements.webhookUrl.value.trim();
+  if (!rawUrl) {
+    throw new Error("Enter your webhook URL first.");
+  }
+
+  try {
+    const url = new URL(rawUrl);
+    const prefix = url.pathname.includes("/webhook-test/") ? "/webhook-test/" : "/webhook/";
+    const prefixIndex = url.pathname.indexOf(prefix);
+    if (prefixIndex >= 0) {
+      url.pathname = `${url.pathname.slice(0, prefixIndex)}${prefix}${path}`;
+      return url.toString();
+    }
+  } catch {
+    // Fall through to string replacement for partially-entered URLs.
+  }
+
+  return rawUrl
+    .replace(/\/webhook-test\/[^/?#]+/, `/webhook-test/${path}`)
+    .replace(/\/webhook\/[^/?#]+/, `/webhook/${path}`);
+}
+
 function readRouteContext() {
   return {
     origin_label: elements.originLabel.value.trim() || null,
@@ -396,6 +432,23 @@ function clearOptionCard(prefix, fallbackTitle) {
   elements[`${prefix}Meta`].textContent = "";
   elements[`${prefix}Address`].textContent = "";
   elements[`${prefix}Note`].textContent = "";
+}
+
+function setRouteResultLayout() {
+  elements.motorwayCard.classList.remove("hidden");
+  elements.offMotorwayCard.classList.remove("hidden");
+  elements.nearbyThirdCard.classList.add("hidden");
+  elements.motorwayTitle.textContent = "Motorway";
+  elements.offMotorwayTitle.textContent = "Off motorway";
+}
+
+function setNearbyResultLayout() {
+  elements.motorwayCard.classList.remove("hidden");
+  elements.offMotorwayCard.classList.remove("hidden");
+  elements.nearbyThirdCard.classList.remove("hidden");
+  elements.motorwayTitle.textContent = "Nearby 1";
+  elements.offMotorwayTitle.textContent = "Nearby 2";
+  elements.nearbyThirdTitle.textContent = "Nearby 3";
 }
 
 function formatPrice(option) {
@@ -457,12 +510,31 @@ function populateOptionCard(prefix, option, emptyMessage) {
   elements[`${prefix}Note`].textContent = option.opening_note || option.selection_reason || "";
 }
 
+function renderNearbyResultDetails(data) {
+  const nearbyOptions = data.nearby_options || data.carplay_response?.nearby_options || [];
+  elements.resultCards.classList.remove("hidden");
+  setNearbyResultLayout();
+  populateOptionCard("motorway", nearbyOptions[0], "No nearby option returned.");
+  populateOptionCard("offMotorway", nearbyOptions[1], "No second nearby option returned.");
+  populateOptionCard("nearbyThird", nearbyOptions[2], "No third nearby option returned.");
+  elements.resultDelta.textContent = nearbyOptions.length
+    ? `${nearbyOptions.length} nearby option${nearbyOptions.length === 1 ? "" : "s"} returned.`
+    : "";
+  elements.resultDelta.classList.toggle("hidden", nearbyOptions.length === 0);
+}
+
 function renderResultDetails(data) {
+  if (Array.isArray(data.nearby_options) || Array.isArray(data.carplay_response?.nearby_options)) {
+    renderNearbyResultDetails(data);
+    return;
+  }
+
   const motorwayOption = data.motorway_option || data.carplay_response?.motorway_option || null;
   const offMotorwayOption = data.off_motorway_option || data.carplay_response?.off_motorway_option || null;
   const pricingModel = data.route_context?.pricing_model || null;
 
   elements.resultCards.classList.remove("hidden");
+  setRouteResultLayout();
   populateOptionCard("motorway", motorwayOption, "No motorway option returned.");
   populateOptionCard("offMotorway", offMotorwayOption, "No off-motorway option returned.");
 
@@ -502,6 +574,7 @@ function renderResultDetails(data) {
 
 async function sendPayload(payload, options = {}) {
   const { webhookUrl } = readSharedSettings();
+  const targetWebhookUrl = options.webhookUrl || webhookUrl;
   const cooldownUntil = getDeCooldownUntil();
 
   if (cooldownUntil > Date.now()) {
@@ -516,7 +589,7 @@ async function sendPayload(payload, options = {}) {
   setStatus("Sending request to webhook...", "neutral");
 
   try {
-    const response = await fetch(webhookUrl, {
+    const response = await fetch(targetWebhookUrl, {
       method: "POST",
       headers: {
         "Accept": "application/json",
@@ -545,6 +618,7 @@ async function sendPayload(payload, options = {}) {
     elements.resultJson.textContent = JSON.stringify({ error: error.message }, null, 2);
     clearOptionCard("motorway", "No motorway option yet.");
     clearOptionCard("offMotorway", "No off-motorway option yet.");
+    clearOptionCard("nearbyThird", "No nearby option yet.");
     elements.resultDelta.textContent = "";
     elements.resultDelta.classList.add("hidden");
     setStatus(error.message || "Request failed.", "error");
@@ -574,6 +648,40 @@ async function handleQuickFuel() {
     await sendPayload(payload);
   } catch (error) {
     setStatus(error.message, "error");
+  }
+}
+
+async function handleNearbyFuel() {
+  try {
+    const shared = readSharedSettings();
+    setStatus("Requesting current location for nearby fuel...", "neutral");
+    setButtonsDisabled(true);
+    const location = await getCurrentLocation();
+    populateOrigin(location.lat, location.lng);
+
+    const payload = {
+      agent_key: shared.agentKey,
+      lat: location.lat,
+      lng: location.lng,
+      fuel_type: shared.fuel_type,
+      trip_mode: "nearby_now",
+      require_open_now: shared.require_open_now,
+      request_time_utc: new Date().toISOString()
+    };
+    if (shared.country) {
+      payload.country = shared.country;
+    } else {
+      payload.country = "uk";
+    }
+
+    await sendPayload(payload, {
+      webhookUrl: deriveWebhookUrl("fuel-companion-nearby-v1"),
+      notify: true
+    });
+  } catch (error) {
+    setStatus(error.message, "error");
+  } finally {
+    setButtonsDisabled(false);
   }
 }
 
@@ -829,6 +937,9 @@ elements.quickGeoButton.addEventListener("click", fillLocationForAll);
 elements.tripGeoButton.addEventListener("click", fillLocationForAll);
 elements.quickSendButton.addEventListener("click", handleQuickFuel);
 elements.tripSendButton.addEventListener("click", handleTripFuel);
+if (elements.nearbyFuelButton) {
+  elements.nearbyFuelButton.addEventListener("click", handleNearbyFuel);
+}
 if (elements.pingFuelButton) {
   elements.pingFuelButton.addEventListener("click", handleFuelPing);
 }
@@ -839,5 +950,6 @@ if (elements.saveSettingsButton) {
 loadSavedSettings();
 clearOptionCard("motorway", "No motorway option yet.");
 clearOptionCard("offMotorway", "No off-motorway option yet.");
+clearOptionCard("nearbyThird", "No nearby option yet.");
 renderDeCooldown();
 setStatus("Ready. Paste the current webhook from the Pi helper and add your agent key.", "neutral");
